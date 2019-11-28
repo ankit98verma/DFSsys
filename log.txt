@@ -1,0 +1,78 @@
+2019-11-28T13:05:09.904347:
+Thread: udp_transmit_thread 
+Packet length: 2
+Packet counter: 4
+Originator Packet counter: 4
+Originator IP: 127.0.0.1
+type: 0
+Sub type: 0
+Forwarding counter: 1
+Messages:
+	Key: O_Transmit_Rate, Value: 3000
+	Key: Alias, Value: AV294
+
+2019-11-28T13:05:09.904347:
+Thread: udp_receive_thread 
+Packet length: 2
+Packet counter: 4
+Originator Packet counter: 4
+Originator IP: 127.0.0.1
+type: 0
+Sub type: 0
+Forwarding counter: 1
+Messages:
+	Key: O_Transmit_Rate, Value: 3000
+	Key: Alias, Value: AV294
+
+2019-11-28T13:05:12.904763:
+Thread: udp_transmit_thread 
+Packet length: 2
+Packet counter: 5
+Originator Packet counter: 5
+Originator IP: 127.0.0.1
+type: 0
+Sub type: 0
+Forwarding counter: 1
+Messages:
+	Key: O_Transmit_Rate, Value: 3000
+	Key: Alias, Value: AV294
+
+2019-11-28T13:05:12.904763:
+Thread: udp_receive_thread 
+Packet length: 2
+Packet counter: 5
+Originator Packet counter: 5
+Originator IP: 127.0.0.1
+type: 0
+Sub type: 0
+Forwarding counter: 1
+Messages:
+	Key: O_Transmit_Rate, Value: 3000
+	Key: Alias, Value: AV294
+
+2019-11-28T13:05:15.905729:
+Thread: udp_transmit_thread 
+Packet length: 2
+Packet counter: 6
+Originator Packet counter: 6
+Originator IP: 127.0.0.1
+type: 0
+Sub type: 0
+Forwarding counter: 1
+Messages:
+	Key: O_Transmit_Rate, Value: 3000
+	Key: Alias, Value: AV294
+
+2019-11-28T13:05:15.905729:
+Thread: udp_receive_thread 
+Packet length: 2
+Packet counter: 6
+Originator Packet counter: 6
+Originator IP: 127.0.0.1
+type: 0
+Sub type: 0
+Forwarding counter: 1
+Messages:
+	Key: O_Transmit_Rate, Value: 3000
+	Key: Alias, Value: AV294
+

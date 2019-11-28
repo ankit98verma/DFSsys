@@ -231,6 +231,7 @@ class StrArgParser:
 
     def decode_command(self, s):
         s = s.strip(' ')
+        s = s.strip('\t')
         s = s.split(' ')
         try:
             s.remove('')
