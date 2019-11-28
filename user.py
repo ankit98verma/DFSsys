@@ -1,9 +1,10 @@
-from packet import DS_packet
-from strargparser import StrArgParser, CommandNotExecuted
-import sys
-import socket
-import time
 import inspect
+import socket
+import threading
+import time
+
+from strargparser import StrArgParser, CommandNotExecuted
+
 
 class User:
 
@@ -12,7 +13,7 @@ class User:
         f = open(path, 'r')
 
         # list of all the configuration parameters to be present in s.config
-        rq = ['IP_ADDR', 'UPD_Receive_port', 'Listen_Conn_No', 'O_Transmit_Rate']
+        rq = ['IP_ADDR', 'UPD_Transmit_port', 'UPD_Receive_port', 'Listen_Conn_No', 'O_Transmit_Rate']
         for l in f.readlines():
             if l[0] == "#":
                 l = ((l[1:]).strip())
@@ -33,18 +34,47 @@ class User:
         self.threads = []
 
         self.udp_transmit_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_transmit_socket.bind((self.params['IP_ADDR'], int(self.params['UPD_Transmit_port'])))
+        self.udp_receive_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udp_receive_socket.bind((self.params['IP_ADDR'], int(self.params['UPD_Receive_port'])))
+        self.udp_receive_socket.settimeout(1)  # 1 sec timeout for now
         self.is_udp_transmit = True
+        self.is_udp_receive = True
 
+        # self.start_threads()    # should be the last line in the __init__ function
 
+    def start_threads(self):
+        print("Starting the UDP thread")
+        th1 = threading.Thread(target=self.udp_transmit_thread, args=())
+        self.threads.append(th1)
+
+        th2 = threading.Thread(target=self.udp_receive_thread, args=())
+        self.threads.append(th2)
+        # init more threads
+        th1.start()
+        th2.start()
 
     def udp_transmit_thread(self):
         while self.is_udp_transmit:
+            #  make the online packet
             self.udp_transmit_socket.sendto(bytes("hi", "utf-8"),
                                             (self.params['IP_ADDR'], int(self.params['UPD_Receive_port'])))
-            d = int(self.params['O_Transmit_Rate'])
+            d = int(self.params['O_Transmit_Rate']) / 1000
+
             time.sleep(d)
-            print("done")
+            print("done")  # only for test
+        print("UDP transmit stopped\n", end="")
         self.udp_transmit_socket.close()
+
+    def udp_receive_thread(self):
+        while self.is_udp_receive:
+            try:
+                data, addr = self.udp_receive_socket.recvfrom(1024)  # buffer size 1024
+                print("Data: %s, Addr: %s" % (data.decode(), addr))
+            except socket.timeout:
+                pass
+        print("UDP receive stopped\n", end="")
+        self.udp_receive_socket.close()
 
     def add_commands(self):
         self.par.add_command("exit", "Ends the program", function=self.cmd_exit)
@@ -73,6 +103,7 @@ class User:
     def cmd_exit(self, out_func=print):
         self.is_loop = False
         self.is_udp_transmit = False
+        self.is_udp_receive = False
         out_func('Exiting')
         exit(0)
 
