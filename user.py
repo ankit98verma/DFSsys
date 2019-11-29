@@ -22,24 +22,28 @@ class User:
         DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Req_packet']['Type'], self.req_packet_proc)
         DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Res_packet']['Type'], self.res_packet_proc)
 
-    def __init__(self, path="user.config"):
-        self.test_counter = 2
-
-        self.basic_params = dict()
+    def read_config(self, path):
+        req = {'IP_ADDR': str, 'UPD_Transmit_port': int, 'UPD_Receive_port': int, 'Listen_Conn_No': int,
+               'O_Transmit_Rate': int, 'Broadcast_addr': str, 'Alias': str,
+               'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Data_check_rate': int, 'GUI_update_rate': int}
+        data = dict()
         f = open(path, 'r')
-
-        # list of all the configuration parameters to be present in s.config
-        rq = ['IP_ADDR', 'UPD_Transmit_port', 'UPD_Receive_port', 'Listen_Conn_No', 'O_Transmit_Rate', 'Broadcast_addr'
-            , 'Duplicate_packet_list_len', 'Removal_margin', 'Data_check_rate']
         for line in f.readlines():
-            if line[0] == "#":
+            if line.strip(' ')[0] == "#":
                 line = line.strip('#')
                 words = line.split(':')
-                self.basic_params[words[0].strip()] = words[1].strip()
-        for r in rq:
-            if r not in self.basic_params:
+                data[words[0].strip(' ')] = req[words[0].strip(' ')](words[1].strip(' '))
+        f.close()
+        for r in req:
+            if r not in data:
                 print("Invalid '%s file: '%s' parameter is missing" % (path, r))
                 exit(0)
+        return data
+
+    def __init__(self, path="user.config"):
+        self.test_counter = 2
+        self.basic_params = self.read_config(path)
+        f = open(path, 'r')
 
         # setup UI
         app = QApplication([])
@@ -115,7 +119,7 @@ class User:
     def trigger_UI(self):
         while self.is_update_UI:
             self.UI.thread.start()
-            time.sleep(1)  # trigger the update every 100 ms
+            time.sleep(0.1)  # trigger the update every 100 ms
 
     def check_onlines(self):
         while self.is_check_onlines:
