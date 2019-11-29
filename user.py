@@ -23,7 +23,7 @@ class User:
         DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Res_packet']['Type'], self.res_packet_proc)
 
     def read_config(self, path):
-        req = {'IP_ADDR': str, 'UPD_Transmit_port': int, 'UPD_Receive_port': int, 'Listen_Conn_No': int,
+        req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
                'O_Transmit_Rate': int, 'Broadcast_addr': str, 'Alias': str,
                'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Data_check_rate': int, 'GUI_update_rate': int}
         data = dict()
@@ -31,6 +31,7 @@ class User:
         for line in f.readlines():
             if line.strip(' ')[0] == "#":
                 line = line.strip('#')
+                line = line.strip('\n')
                 words = line.split(':')
                 data[words[0].strip(' ')] = req[words[0].strip(' ')](words[1].strip(' '))
         f.close()
@@ -43,7 +44,6 @@ class User:
     def __init__(self, path="user.config"):
         self.test_counter = 2
         self.basic_params = self.read_config(path)
-        f = open(path, 'r')
 
         # setup UI
         app = QApplication([])
@@ -68,11 +68,11 @@ class User:
         self.threads = []
 
         self.udp_transmit_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_transmit_socket.bind((self.basic_params['IP_ADDR'], int(self.basic_params['UPD_Transmit_port'])))
+        self.udp_transmit_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Transmit_port']))
         self.udp_transmit_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         self.udp_receive_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_receive_socket.bind((self.basic_params['IP_ADDR'], int(self.basic_params['UPD_Receive_port'])))
+        self.udp_receive_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Receive_port']))
         self.udp_receive_socket.settimeout(1)  # 1 sec timeout for now
 
         self.is_udp_transmit = True
@@ -123,8 +123,8 @@ class User:
 
     def check_onlines(self):
         while self.is_check_onlines:
-            self.data.check_onlines_data(int(self.basic_params['Removal_margin']))
-            time.sleep(int(self.basic_params['Data_check_rate']) / 1000)
+            self.data.check_onlines_data(self.basic_params['Removal_margin'])
+            time.sleep(self.basic_params['Data_check_rate'] / 1000)
         return
 
     def close_threads(self):
@@ -147,7 +147,7 @@ class User:
     def udp_transmit_thread(self):
         while self.is_udp_transmit:
             #  make a online packet
-            p = O_packet(transmit_rate=int(self.basic_params['O_Transmit_Rate']), alias=self.basic_params['Alias'],
+            p = O_packet(transmit_rate=self.basic_params['O_Transmit_Rate'], alias=self.basic_params['Alias'],
                          packet_counter=self.basic_params['packet_counter'],
                          originator_packet_counter=self.basic_params['packet_counter'],
                          originator_ip=self.basic_params['IP_ADDR'],
@@ -155,11 +155,11 @@ class User:
                          forwarding_counter=1)
             # self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
             self.udp_transmit_socket.sendto(pk.dumps(p), (self.basic_params['Broadcast_addr'],
-                                                          int(self.basic_params['UPD_Receive_port'])))
+                                                          self.basic_params['UDP_Receive_port']))
             if self.is_verbose:
                 outs = "Thread: udp_transmit_thread \n%s" % str(p)
                 self.out_func(outs)
-            d = int(self.basic_params['O_Transmit_Rate']) / 1000
+            d = self.basic_params['O_Transmit_Rate'] / 1000
             # self.test_counter = self.test_counter - 1     # for testing purpose only
             time.sleep(d)
         self.out_func("UDP transmit stopped\n", end="")

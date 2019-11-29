@@ -45,7 +45,7 @@ class DataStructures:
     def add_item_duplicate_packets(self, p):
         d = {'originator_IP': p.originator_IP, 'originator_packet_counter': p.originator_packet_counter}
         self.duplicate_packets.append(d)
-        if len(self.duplicate_packets) > int(self.basic_params['Duplicate_packet_list_len']):
+        if len(self.duplicate_packets) > self.basic_params['Duplicate_packet_list_len']:
             self.duplicate_packets = self.duplicate_packets[1:]
         return
 
