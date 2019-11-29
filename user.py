@@ -2,11 +2,10 @@ import inspect
 import pickle as pk
 import socket
 import threading
-import time
 from datetime import datetime
 
 from data_structures import DataStructures
-from packet import DS_packet
+from packet import *
 from strargparser import StrArgParser, CommandNotExecuted
 
 
@@ -16,16 +15,19 @@ class User:
         print("Welcome!\nStarting the UDP transmit and receive thread")
 
     def setup_packet_proc_funcs(self):
-        DS_packet.set_packet_proc_func(DS_packet.PACKET_TYPES['O_packet']['Type'], self.o_packet_proc)
-        DS_packet.set_packet_proc_func(DS_packet.PACKET_TYPES['Req_packet']['Type'], self.req_packet_proc)
-        DS_packet.set_packet_proc_func(DS_packet.PACKET_TYPES['Res_packet']['Type'], self.res_packet_proc)
+        DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['O_packet']['Type'], self.o_packet_proc)
+        DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Req_packet']['Type'], self.req_packet_proc)
+        DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Res_packet']['Type'], self.res_packet_proc)
 
     def __init__(self, path="user.config"):
+        self.test_counter = 2
+
         self.basic_params = dict()
         f = open(path, 'r')
 
         # list of all the configuration parameters to be present in s.config
-        rq = ['IP_ADDR', 'UPD_Transmit_port', 'UPD_Receive_port', 'Listen_Conn_No', 'O_Transmit_Rate', 'Broadcast_addr']
+        rq = ['IP_ADDR', 'UPD_Transmit_port', 'UPD_Receive_port', 'Listen_Conn_No', 'O_Transmit_Rate', 'Broadcast_addr'
+            , 'Duplicate_packet_list_len', 'Removal_margin', 'Data_check_rate']
         for line in f.readlines():
             if line[0] == "#":
                 line = line.strip('#')
@@ -65,6 +67,7 @@ class User:
         self.udp_receive_socket.settimeout(1)  # 1 sec timeout for now
         self.is_udp_receive = True
 
+        self.is_check_onlines = True
         self.setup_packet_proc_funcs()
         self.start_threads()  # should be the last line in the __init__ function
 
@@ -76,40 +79,54 @@ class User:
         th2 = threading.Thread(target=self.udp_receive_thread, args=())
         self.threads.append(th2)
         # init more threads
+
+        th3 = threading.Thread(target=self.check_onlines, args=())
+        self.threads.append(th3)
+
         th1.start()
         th2.start()
+        th3.start()
+
+    def check_onlines(self):
+        while self.is_check_onlines:
+            self.data.check_onlines_data(int(self.basic_params['Removal_margin']))
+            time.sleep(int(self.basic_params['Data_check_rate']) / 1000)
+        return
 
     def close_threads(self):
         for t in self.threads:
             t.join()
 
-    def o_packet_proc(self):
+    def o_packet_proc(self, p):
         print('got o_packet')
+        # add the user to the
+        p.messages['Timestamp'] = int(round(time.time() * 1000))
+        self.data.add_item_onlines(p)
+        # self.data.add_item_duplicate_packets(p)   # not required
 
-    def req_packet_proc(self):
-        print('got req packet')
+    def req_packet_proc(self, p):
+        print('got req packet %s' % self.basic_params['IP_ADDR'])
 
-    def res_packet_proc(self):
-        print('got res packet')
+    def res_packet_proc(self, p):
+        print('got res packet %s' % self.basic_params['IP_ADDR'])
 
     def udp_transmit_thread(self):
         while self.is_udp_transmit:
-            #  make the online packets
-            p_msg = {'O_Transmit_Rate': self.basic_params['O_Transmit_Rate'],
-                     'Alias': self.basic_params['Alias']}
-            p = DS_packet(self.basic_params['packet_counter'], self.basic_params['packet_counter'],
-                          originator_ip=self.basic_params['IP_ADDR'],
-                          packet_type=DS_packet.PACKET_TYPES['O_packet']['Type'],
-                          sub_type=DS_packet.PACKET_TYPES['O_packet']['Subtype']['Online_packet'],
-                          forwarding_counter=1, messages=p_msg)
-            self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
+            #  make a online packet
+            p = O_packet(transmit_rate=int(self.basic_params['O_Transmit_Rate']), alias=self.basic_params['Alias'],
+                         packet_counter=self.basic_params['packet_counter'],
+                         originator_packet_counter=self.basic_params['packet_counter'],
+                         originator_ip=self.basic_params['IP_ADDR'],
+                         sub_type=DSPacket.PACKET_TYPES['O_packet']['Subtype']['Online_packet'],
+                         forwarding_counter=1)
+            # self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
             self.udp_transmit_socket.sendto(pk.dumps(p), (self.basic_params['Broadcast_addr'],
                                                           int(self.basic_params['UPD_Receive_port'])))
             if self.is_verbose:
                 outs = "Thread: udp_transmit_thread \n%s" % str(p)
                 self.out_func(outs)
             d = int(self.basic_params['O_Transmit_Rate']) / 1000
-
+            # self.test_counter = self.test_counter - 1     # for testing purpose only
             time.sleep(d)
         self.out_func("UDP transmit stopped\n", end="")
         self.udp_transmit_socket.close()
@@ -125,7 +142,7 @@ class User:
                     self.out_func(outs)
                 #     should we process the packet now???
                 if self.data.should_process_packet(data):
-                    DS_packet.packet_proc_funcs[data.type]()
+                    DSPacket.packet_proc_funcs[data.type](data)
                 else:
                     print("Nope :(")
 
@@ -164,6 +181,7 @@ class User:
         self.is_loop = False
         self.is_udp_transmit = False
         self.is_udp_receive = False
+        self.is_check_onlines = True
 
         self.close_threads()
         out_func('Exiting')

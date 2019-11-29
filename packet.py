@@ -1,5 +1,7 @@
+import time
 
-class DS_packet:
+
+class DSPacket:
     PACKET_TYPES = {'O_packet':
                         {'Type': 0,
                          'Subtype':
@@ -39,7 +41,7 @@ class DS_packet:
 
     @staticmethod
     def set_packet_proc_func(packet_type, func):
-        DS_packet.packet_proc_funcs[packet_type] = func
+        DSPacket.packet_proc_funcs[packet_type] = func
 
     def __str__(self):
         string = ""
@@ -55,3 +57,41 @@ class DS_packet:
             string += ("\tKey: %s, Value: %s\n" % (str(k), str(self.messages[k])))
 
         return string
+
+
+class O_packet(DSPacket):
+    PACKET_TYPE = 0
+    SUB_TYPES = [0]
+
+    msg_keys = ['O_Transmit_Rate', 'Alias']
+
+    def __init__(self, transmit_rate, alias, packet_counter=0, originator_packet_counter=0, originator_ip="127.0.0.1",
+                 sub_type=0, forwarding_counter=0):
+        super().__init__(packet_counter=packet_counter, originator_packet_counter=originator_packet_counter,
+                         originator_ip=originator_ip, packet_type=O_packet.PACKET_TYPE, sub_type=sub_type,
+                         forwarding_counter=forwarding_counter)
+        self.messages['O_Transmit_Rate'] = transmit_rate
+        self.messages['Alias'] = alias
+        self.messages['Timestamp'] = int(round(time.time() * 1000))
+
+    def get_transmit_rate(self):
+        return self.messages['O_Transmit_Rate']
+
+    def get_alias(self):
+        return self.messages['Alias']
+
+    def get_timestamp(self):
+        return self.messages['Timestamp']
+
+
+class Req_packet(DSPacket):
+    PACKET_TYPE = 0
+    SUB_TYPES = [0, 1, 2, 3, 255]
+
+    msg_keys = ['O_Transmit_Rate', 'Alias']
+
+    def __init__(self, packet_counter=0, originator_packet_counter=0, originator_ip="127.0.0.1",
+                 sub_type=0, forwarding_counter=0):
+        super().__init__(packet_counter=packet_counter, originator_packet_counter=originator_packet_counter,
+                         originator_ip=originator_ip, packet_type=O_packet.PACKET_TYPE, sub_type=sub_type,
+                         forwarding_counter=forwarding_counter)
