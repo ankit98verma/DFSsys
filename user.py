@@ -4,7 +4,10 @@ import socket
 import threading
 from datetime import datetime
 
+from PyQt5.QtWidgets import *
+
 from data_structures import DataStructures
+from dfssys_gui import Window
 from packet import *
 from strargparser import StrArgParser, CommandNotExecuted
 
@@ -38,6 +41,9 @@ class User:
                 print("Invalid '%s file: '%s' parameter is missing" % (path, r))
                 exit(0)
 
+        # setup UI
+        app = QApplication([])
+        self.UI = Window()
         # initialize operation related parameters
         self.par = StrArgParser("Main command parser")
         self.is_loop = True
@@ -54,38 +60,62 @@ class User:
         self.data = DataStructures(self.basic_params)
 
         # start and configure all threads
+        self.is_verbose = False
         self.threads = []
 
         self.udp_transmit_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_transmit_socket.bind((self.basic_params['IP_ADDR'], int(self.basic_params['UPD_Transmit_port'])))
         self.udp_transmit_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.is_udp_transmit = True
-        self.is_verbose = False
 
         self.udp_receive_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_receive_socket.bind((self.basic_params['IP_ADDR'], int(self.basic_params['UPD_Receive_port'])))
         self.udp_receive_socket.settimeout(1)  # 1 sec timeout for now
-        self.is_udp_receive = True
 
+        self.is_udp_transmit = True
         self.is_check_onlines = True
+        self.is_udp_receive = True
+        self.is_update_UI = True
+
+        # setup the packet handle functions
         self.setup_packet_proc_funcs()
         self.start_threads()  # should be the last line in the __init__ function
 
+        self.UI.show()
+        app.exec_()
+
     def start_threads(self):
         print("Starting the UDP thread")
+        # thread for starting the UDP transmit
         th1 = threading.Thread(target=self.udp_transmit_thread, args=())
         self.threads.append(th1)
 
+        # thread for starting the UDP receive
         th2 = threading.Thread(target=self.udp_receive_thread, args=())
         self.threads.append(th2)
-        # init more threads
 
+        # thread for starting the regular checking of tables
         th3 = threading.Thread(target=self.check_onlines, args=())
         self.threads.append(th3)
 
+        # thread for starting the regular checking of tables
+        th4 = threading.Thread(target=self.trigger_UI, args=())
+        self.threads.append(th4)
+
+        # thread for user input
+        th5 = threading.Thread(target=self.handle_input, args=())
+        # self.threads.append(th5)
+
+        # start all the threads
         th1.start()
         th2.start()
         th3.start()
+        th4.start()
+        th5.start()
+
+    def trigger_UI(self):
+        while self.is_update_UI:
+            self.UI.thread.start()
+            time.sleep(1)  # trigger the update every 100 ms
 
     def check_onlines(self):
         while self.is_check_onlines:
@@ -181,8 +211,10 @@ class User:
         self.is_loop = False
         self.is_udp_transmit = False
         self.is_udp_receive = False
-        self.is_check_onlines = True
+        self.is_check_onlines = False
+        self.is_update_UI = False
 
+        self.UI.close()
         self.close_threads()
         out_func('Exiting')
 
@@ -274,4 +306,4 @@ class User:
 
 if __name__ == '__main__':
     u = User()
-    u.handle_input()
+    # u.handle_input()

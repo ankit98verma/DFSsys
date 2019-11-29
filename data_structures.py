@@ -21,11 +21,6 @@ class DataStructures:
             return False
         return True
 
-    def is_duplicate(self, p):
-        k = [i for i in self.duplicate_packets if (i['originator_IP'] == p.originator_IP and
-                                                   i['originator_packet_counter'] == p.originator_packet_counter)]
-        return len(k) > 0
-
     def add_item_onlines(self, p):
         #  find a better way
         d = {'IP_addr': p.originator_IP, 'o_transmit_rate': p.get_transmit_rate(), 'alias': p.get_alias(),
@@ -42,6 +37,10 @@ class DataStructures:
                 self.onlines.remove(i)
         return
 
+    def is_duplicate(self, p):
+        k = [i for i in self.duplicate_packets if (i['originator_IP'] == p.originator_IP and
+                                                   i['originator_packet_counter'] == p.originator_packet_counter)]
+        return len(k) > 0
 
     def add_item_duplicate_packets(self, p):
         d = {'originator_IP': p.originator_IP, 'originator_packet_counter': p.originator_packet_counter}
