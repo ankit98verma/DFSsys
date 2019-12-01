@@ -125,6 +125,7 @@ class User:
 
         self.UI.show()
         app.exec_()
+        print('Exited UI')
 
     def trigger_UI(self):
         while self.is_update_UI:
@@ -218,6 +219,10 @@ class User:
                                                                     'Prints out the commands being executed from '
                                                                     'the script', param_type=None)
 
+        self.par.add_command('show_gui', "Show different GUI windows.", function=self.cmd_show_gui)
+        self.par.get_command('show_gui').add_optional_arguments('-m', '--main_gui',
+                                                                'Shows the main GUI with basic log information',
+                                                                param_type=None)
         self.par.add_command('help', "Gives the details of all the commands of session management",
                              function=self.cmd_help)
 
@@ -256,6 +261,11 @@ class User:
         if '-n' in key_list:
             self.out_func = print
             self.out_file = None
+
+    def cmd_show_gui(self, res):
+        key_list = list(res.keys())
+        if '-m' in key_list:
+            self.UI.show()
 
     def cmd_start_script(self, res, out_func=print):
         try:
