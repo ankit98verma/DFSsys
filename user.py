@@ -57,8 +57,8 @@ class User:
         self.log_info['Rece_req_packet_nos'] = 0
 
         # setup UI
-        app = QApplication([])
-        self.UI = main_gui(self.log_info)
+        self.UI = None
+
         # initialize operation related parameters
         self.par = StrArgParser("Main command parser")
         self.is_loop = True
@@ -91,9 +91,6 @@ class User:
         self.setup_packet_proc_funcs()
         self.start_threads()  # should be the last line in the __init__ function
 
-        self.UI.show()
-        app.exec_()
-
     def start_threads(self):
         print("Starting the UDP thread")
         # thread for starting the UDP transmit
@@ -108,19 +105,26 @@ class User:
         th3 = threading.Thread(target=self.check_onlines, args=())
         self.threads.append(th3)
 
-        # thread for starting the regular checking of tables
-        th4 = threading.Thread(target=self.trigger_UI, args=())
-        self.threads.append(th4)
-
         # thread for user input
-        th5 = threading.Thread(target=self.handle_input, args=())
+        th4 = threading.Thread(target=self.setup_main_gui, args=())
 
         # start all the threads
         th1.start()
         th2.start()
         th3.start()
         th4.start()
-        th5.start()
+
+    def setup_main_gui(self):
+        app = QApplication([])
+        self.UI = main_gui(self.log_info)
+
+        # thread for starting the regular checking of tables
+        th = threading.Thread(target=self.trigger_UI, args=())
+        self.threads.append(th)
+        th.start()
+
+        self.UI.show()
+        app.exec_()
 
     def trigger_UI(self):
         while self.is_update_UI:
@@ -316,4 +320,4 @@ class User:
 
 if __name__ == '__main__':
     u = User()
-    # u.handle_input()
+    u.handle_input()
