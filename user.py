@@ -105,7 +105,7 @@ class User:
         th3 = threading.Thread(target=self.check_onlines, args=())
         self.threads.append(th3)
 
-        # thread for user input
+        # thread for GUI
         th4 = threading.Thread(target=self.setup_main_gui, args=())
 
         # start all the threads

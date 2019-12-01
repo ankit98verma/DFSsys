@@ -45,20 +45,24 @@ class DFSsysGUI:
 
 class gui_base(QWidget):
 
-    def __init__(self, parent=None):
+    def __init__(self, title, parent=None):
         QWidget.__init__(self, parent)
         self.do_close = False
         self.allow_update = True
         self.thread = Worker()
-        self.labels = []
         self.layout = QGridLayout()
 
         self.layout.setContentsMargins(10, 10, 10, 10)
         self.thread.finished.connect(self.updateUi)
         self.setLayout(self.layout)
-        self.setWindowTitle(self.tr("Log information"))
+        self.setWindowTitle(self.tr(title))
 
     def updateUi(self):
+        if not self.allow_update:
+            return
+        self.drawUI()
+
+    def drawUI(self):
         pass
 
     def closeEvent(self, event):
@@ -77,8 +81,9 @@ class gui_base(QWidget):
 class main_gui(gui_base):
 
     def __init__(self, data, parent=None):
-        super().__init__(parent)
+        super().__init__("Log information", parent)
         self.data = data
+        self.labels = []
         self.prev_data = data.copy()
         r = 0
         for k, v in self.data.items():
@@ -97,11 +102,7 @@ class main_gui(gui_base):
             r += 1
             self.labels.append(labeli)
 
-        self.setWindowTitle(self.tr("Log information"))
-
-    def updateUi(self):
-        if not self.allow_update:
-            return
+    def drawUI(self):
         i = 0
         for k, v in self.data.items():
             prev_d = self.prev_data[k]
@@ -118,37 +119,25 @@ class main_gui(gui_base):
 class onlines_gui(gui_base):
 
     def __init__(self, online_data, parent=None):
-        super().__init__(parent)
+        super().__init__("Online users", parent)
 
         self.data = online_data
+        self.table = QTableWidget(0, 4)
 
-        label = QLabel(self.tr("IP Addr"))
-        self.layout.addWidget(label, 0, 0)
-        label = QLabel(self.tr("Alias"))
-        self.layout.addWidget(label, 0, 1)
-        label = QLabel(self.tr("Transmit rate"))
-        self.layout.addWidget(label, 0, 2)
-        label = QLabel(self.tr("Timestamp"))
-        self.layout.addWidget(label, 0, 3)
+        self.table.setHorizontalHeaderLabels(["IP Addr", "Alias", "Transmit rate", "Timestamp"])
+        self.layout.addWidget(self.table)
+        self.resize(500, 400)
 
-        self.setWindowTitle(self.tr("Online users"))
-
-    def updateUi(self):
+    def drawUI(self):
         # first remove all the labels:
-        if not self.allow_update:
-            return
-        for i in reversed(range(len(self.labels))):
-            la = self.labels[i]
-            la.setParent(None)
-        self.labels = []
-        r = 1
+        while self.table.rowCount() > 0:
+            self.table.removeRow(0)
+        r = 0
         for i in self.data:
+            self.table.insertRow(r)
             c = 0
             for k, v in i.items():
-                label = QLabel(self.tr("%s" % str(v)))
-                # print(len(self.data))
-                self.labels.append(label)
-                self.layout.addWidget(label, r, c)
+                self.table.setItem(r, c, QTableWidgetItem(self.tr("%s" % str(v))))
                 c += 1
             r += 1
 
