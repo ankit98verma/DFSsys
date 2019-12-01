@@ -3,9 +3,18 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
 
+# Disabling the warnings
+def handler(msg_type, msg_log_context, msg_string):
+    pass
+
+
+qInstallMessageHandler(handler)
+
+
 class main_gui(QWidget):
     def __init__(self, data, parent=None):
         QWidget.__init__(self, parent)
+        self.do_close = False
         self.data = data
         self.prev_data = data.copy()
         self.thread = Worker()
@@ -46,8 +55,12 @@ class main_gui(QWidget):
             i += 1
         self.prev_data = self.data.copy()
 
-    def set_data(self, data):
-        self.data = data
+    def closeEvent(self, event):
+        if self.do_close:
+            super().closeEvent(event)
+        else:
+            event.ignore()
+            self.hide()
 
 
 class Worker(QThread):

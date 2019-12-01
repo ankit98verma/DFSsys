@@ -228,6 +228,7 @@ class User:
         self.is_check_onlines = False
         self.is_update_UI = False
 
+        self.UI.do_close = True
         self.UI.close()
         self.close_threads()
         out_func('Exiting')
