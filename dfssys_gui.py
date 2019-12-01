@@ -18,24 +18,22 @@ class DFSsysGUI:
         self.onlines_gui = onlines_gui(onlines_data)
 
     def trigger_guis(self, w):
-        if w == 'all':
+        if '-a' in w:
             self.main_gui.thread.start()
             self.onlines_gui.thread.start()
-        else:
-            if '-m' in w:
-                self.main_gui.thread.start()
-            if '-o' in w:
-                self.onlines_gui.thread.start()
+        elif '-m' in w:
+            self.main_gui.thread.start()
+        elif '-o' in w:
+            self.onlines_gui.thread.start()
 
     def show_guis(self, w):
-        if w == 'all':
+        if '-a' in w:
             self.main_gui.show()
             self.onlines_gui.show()
-        else:
-            if '-m' in w:
-                self.main_gui.show()
-            if '-o' in w:
-                self.onlines_gui.show()
+        elif '-m' in w:
+            self.main_gui.show()
+        elif '-o' in w:
+            self.onlines_gui.show()
 
     def close_guis(self):
         self.main_gui.do_close = True
@@ -45,16 +43,43 @@ class DFSsysGUI:
         self.onlines_gui.close()
 
 
-class main_gui(QWidget):
-    def __init__(self, data, parent=None):
+class gui_base(QWidget):
+
+    def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         self.do_close = False
+        self.allow_update = True
+        self.thread = Worker()
+        self.labels = []
+        self.layout = QGridLayout()
+
+        self.layout.setContentsMargins(10, 10, 10, 10)
+        self.thread.finished.connect(self.updateUi)
+        self.setLayout(self.layout)
+        self.setWindowTitle(self.tr("Log information"))
+
+    def updateUi(self):
+        pass
+
+    def closeEvent(self, event):
+        if self.do_close:
+            super().closeEvent(event)
+        else:
+            event.ignore()
+            self.allow_update = False
+            self.hide()
+
+    def show(self):
+        super().show()
+        self.allow_update = True
+
+
+class main_gui(gui_base):
+
+    def __init__(self, data, parent=None):
+        super().__init__(parent)
         self.data = data
         self.prev_data = data.copy()
-        self.thread = Worker()
-        self.i = 0
-        self.labels = []
-        layout = QGridLayout()
         r = 0
         for k, v in self.data.items():
             label = QLabel(self.tr("%s:" % k))
@@ -67,16 +92,16 @@ class main_gui(QWidget):
             labeli.setLineWidth(1)
             labeli.setFont(QtGui.QFont('Times', 10))
 
-            layout.addWidget(label, r, 0)
-            layout.addWidget(labeli, r, 1)
+            self.layout.addWidget(label, r, 0)
+            self.layout.addWidget(labeli, r, 1)
             r += 1
             self.labels.append(labeli)
-        layout.setContentsMargins(10, 10, 10, 10)
-        self.thread.finished.connect(self.updateUi)
-        self.setLayout(layout)
+
         self.setWindowTitle(self.tr("Log information"))
 
     def updateUi(self):
+        if not self.allow_update:
+            return
         i = 0
         for k, v in self.data.items():
             prev_d = self.prev_data[k]
@@ -89,24 +114,14 @@ class main_gui(QWidget):
             i += 1
         self.prev_data = self.data.copy()
 
-    def closeEvent(self, event):
-        if self.do_close:
-            super().closeEvent(event)
-        else:
-            event.ignore()
-            self.hide()
 
-
-class onlines_gui(QWidget):
+class onlines_gui(gui_base):
 
     def __init__(self, online_data, parent=None):
-        QWidget.__init__(self, parent)
-        self.do_close = False
+        super().__init__(parent)
+
         self.data = online_data
-        self.thread = Worker()
-        self.i = 0
-        self.labels = []
-        self.layout = QGridLayout()
+
         label = QLabel(self.tr("IP Addr"))
         self.layout.addWidget(label, 0, 0)
         label = QLabel(self.tr("Alias"))
@@ -116,13 +131,12 @@ class onlines_gui(QWidget):
         label = QLabel(self.tr("Timestamp"))
         self.layout.addWidget(label, 0, 3)
 
-        self.layout.setContentsMargins(10, 10, 10, 10)
-        self.thread.finished.connect(self.updateUi)
-        self.setLayout(self.layout)
         self.setWindowTitle(self.tr("Online users"))
 
     def updateUi(self):
         # first remove all the labels:
+        if not self.allow_update:
+            return
         for i in reversed(range(len(self.labels))):
             la = self.labels[i]
             la.setParent(None)
@@ -137,13 +151,6 @@ class onlines_gui(QWidget):
                 self.layout.addWidget(label, r, c)
                 c += 1
             r += 1
-
-    def closeEvent(self, event):
-        if self.do_close:
-            super().closeEvent(event)
-        else:
-            event.ignore()
-            self.hide()
 
 
 class Worker(QThread):

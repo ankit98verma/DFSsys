@@ -123,13 +123,13 @@ class User:
         self.threads.append(th)
         th.start()
 
-        self.UI.show_guis('all')
+        self.UI.show_guis('-a')
         app.exec_()
         print('Exited UI')
 
     def trigger_UI(self):
         while self.is_update_UI:
-            self.UI.trigger_guis('all')
+            self.UI.trigger_guis('-a')
             time.sleep(self.basic_params['GUI_update_rate'] / 1000)  # trigger the update every 100 ms
 
     def check_onlines(self):
@@ -157,6 +157,9 @@ class User:
     def udp_transmit_thread(self):
         while self.is_udp_transmit:
             #  make a online packet
+            # self.test_counter = self.test_counter - 1     # for testing purpose only
+            d = self.basic_params['O_Transmit_Rate'] / 1000
+            time.sleep(d)
             p = O_packet(transmit_rate=self.basic_params['O_Transmit_Rate'], alias=self.basic_params['Alias'],
                          packet_counter=self.basic_params['packet_counter'],
                          originator_packet_counter=self.basic_params['packet_counter'],
@@ -170,9 +173,7 @@ class User:
             if self.is_verbose:
                 outs = "Thread: udp_transmit_thread \n%s" % str(p)
                 self.out_func(outs)
-            d = self.basic_params['O_Transmit_Rate'] / 1000
-            # self.test_counter = self.test_counter - 1     # for testing purpose only
-            time.sleep(d)
+
         self.out_func("UDP transmit stopped\n", end="")
         self.udp_transmit_socket.close()
 
@@ -225,6 +226,10 @@ class User:
         self.par.get_command('show_gui').add_optional_arguments('-o', '--onlines_gui',
                                                                 'Shows the list of online users',
                                                                 param_type=None)
+        self.par.get_command('show_gui').add_optional_arguments('-a', '--all',
+                                                                'Shows the list of online users',
+                                                                param_type=None)
+
         self.par.add_command('help', "Gives the details of all the commands of session management",
                              function=self.cmd_help)
 

@@ -22,8 +22,6 @@ class DataStructures:
         return True
 
     def add_item_onlines(self, p):
-        #  find a better way
-
         ind = [self.onlines.index(l) for l in self.onlines if l['IP_addr'] == p.originator_IP]
         if len(ind) == 1:
             self.onlines[ind[0]]['alias'] = p.get_alias()
