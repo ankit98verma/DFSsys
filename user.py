@@ -7,7 +7,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import *
 
 from data_structures import DataStructures
-from dfssys_gui import Window
+from dfssys_gui import main_gui
 from packet import *
 from strargparser import StrArgParser, CommandNotExecuted
 
@@ -43,11 +43,22 @@ class User:
 
     def __init__(self, path="user.config"):
         self.test_counter = 2
+        # initialize the protocol and operation related variable
         self.basic_params = self.read_config(path)
+        self.basic_params['packet_counter'] = 0
+
+        self.log_info = self.basic_params
+
+        self.log_info['Tran_o_packet_nos'] = 0
+        self.log_info['Tran_res_packet_nos'] = 0
+        self.log_info['Tran_req_packet_nos'] = 0
+        self.log_info['Rece_o_packet_nos'] = 0
+        self.log_info['Rece_res_packet_nos'] = 0
+        self.log_info['Rece_req_packet_nos'] = 0
 
         # setup UI
         app = QApplication([])
-        self.UI = Window()
+        self.UI = main_gui(self.log_info)
         # initialize operation related parameters
         self.par = StrArgParser("Main command parser")
         self.is_loop = True
@@ -56,10 +67,6 @@ class User:
         self.welcome_msg()
         self.out_func = print
         self.out_file = None
-
-        # initialize the protocol related variable
-        self.prev_packet = None
-        self.basic_params['packet_counter'] = 0
 
         self.data = DataStructures(self.basic_params)
 
@@ -107,7 +114,6 @@ class User:
 
         # thread for user input
         th5 = threading.Thread(target=self.handle_input, args=())
-        # self.threads.append(th5)
 
         # start all the threads
         th1.start()
@@ -118,8 +124,9 @@ class User:
 
     def trigger_UI(self):
         while self.is_update_UI:
+            # self.UI.set_data(self.log_info)
             self.UI.thread.start()
-            time.sleep(0.1)  # trigger the update every 100 ms
+            time.sleep(self.basic_params['GUI_update_rate'] / 1000)  # trigger the update every 100 ms
 
     def check_onlines(self):
         while self.is_check_onlines:
@@ -132,11 +139,10 @@ class User:
             t.join()
 
     def o_packet_proc(self, p):
-        print('got o_packet')
+        self.log_info['Rece_o_packet_nos'] += 1
         # add the user to the
         p.messages['Timestamp'] = int(round(time.time() * 1000))
         self.data.add_item_onlines(p)
-        # self.data.add_item_duplicate_packets(p)   # not required
 
     def req_packet_proc(self, p):
         print('got req packet %s' % self.basic_params['IP_ADDR'])
@@ -153,9 +159,10 @@ class User:
                          originator_ip=self.basic_params['IP_ADDR'],
                          sub_type=DSPacket.PACKET_TYPES['O_packet']['Subtype']['Online_packet'],
                          forwarding_counter=1)
-            # self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
+            self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
             self.udp_transmit_socket.sendto(pk.dumps(p), (self.basic_params['Broadcast_addr'],
                                                           self.basic_params['UDP_Receive_port']))
+            self.log_info['Tran_o_packet_nos'] += 1
             if self.is_verbose:
                 outs = "Thread: udp_transmit_thread \n%s" % str(p)
                 self.out_func(outs)
@@ -169,7 +176,6 @@ class User:
         while self.is_udp_receive:
             try:
                 data, addr = self.udp_receive_socket.recvfrom(1024)  # buffer size 1024
-                print(addr)
                 data = pk.loads(data)
                 if self.is_verbose:
                     outs = "Thread: udp_receive_thread \n%s" % str(data)
