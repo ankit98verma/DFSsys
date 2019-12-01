@@ -23,17 +23,22 @@ class DataStructures:
 
     def add_item_onlines(self, p):
         #  find a better way
-        d = {'IP_addr': p.originator_IP, 'o_transmit_rate': p.get_transmit_rate(), 'alias': p.get_alias(),
-             'timestamp': p.get_timestamp()}
-        self.onlines.append(d)
-        self.onlines = list({v['IP_addr']: v for v in self.onlines}.values())
+
+        ind = [self.onlines.index(l) for l in self.onlines if l['IP_addr'] == p.originator_IP]
+        if len(ind) == 1:
+            self.onlines[ind[0]]['alias'] = p.get_alias()
+            self.onlines[ind[0]]['o_transmit_rate'] = p.get_transmit_rate()
+            self.onlines[ind[0]]['timestamp'] = p.get_timestamp()
+        else:
+            d = {'IP_addr': p.originator_IP, 'alias': p.get_alias(), 'o_transmit_rate': p.get_transmit_rate(),
+                 'timestamp': p.get_timestamp()}
+            self.onlines.append(d)
         return
 
     def check_onlines_data(self, removal_margin):
         curr_time = int(round(time.time() * 1000))
         for i in self.onlines:
             if (curr_time - i['timestamp']) > (removal_margin + i['o_transmit_rate']):
-                # remove the entry
                 self.onlines.remove(i)
         return
 

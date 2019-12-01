@@ -7,7 +7,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import *
 
 from data_structures import DataStructures
-from dfssys_gui import main_gui
+from dfssys_gui import DFSsysGUI
 from packet import *
 from strargparser import StrArgParser, CommandNotExecuted
 
@@ -116,21 +116,20 @@ class User:
 
     def setup_main_gui(self):
         app = QApplication([])
-        self.UI = main_gui(self.log_info)
+        self.UI = DFSsysGUI(self.log_info, self.data.onlines)
 
         # thread for starting the regular checking of tables
         th = threading.Thread(target=self.trigger_UI, args=())
         self.threads.append(th)
         th.start()
 
-        self.UI.show()
+        self.UI.show_guis('all')
         app.exec_()
         print('Exited UI')
 
     def trigger_UI(self):
         while self.is_update_UI:
-            # self.UI.set_data(self.log_info)
-            self.UI.thread.start()
+            self.UI.trigger_guis('all')
             time.sleep(self.basic_params['GUI_update_rate'] / 1000)  # trigger the update every 100 ms
 
     def check_onlines(self):
@@ -223,6 +222,9 @@ class User:
         self.par.get_command('show_gui').add_optional_arguments('-m', '--main_gui',
                                                                 'Shows the main GUI with basic log information',
                                                                 param_type=None)
+        self.par.get_command('show_gui').add_optional_arguments('-o', '--onlines_gui',
+                                                                'Shows the list of online users',
+                                                                param_type=None)
         self.par.add_command('help', "Gives the details of all the commands of session management",
                              function=self.cmd_help)
 
@@ -233,8 +235,7 @@ class User:
         self.is_check_onlines = False
         self.is_update_UI = False
 
-        self.UI.do_close = True
-        self.UI.close()
+        self.UI.close_guis()
         self.close_threads()
         out_func('Exiting')
 
@@ -264,8 +265,7 @@ class User:
 
     def cmd_show_gui(self, res):
         key_list = list(res.keys())
-        if '-m' in key_list:
-            self.UI.show()
+        self.UI.show_guis(key_list)
 
     def cmd_start_script(self, res, out_func=print):
         try:
