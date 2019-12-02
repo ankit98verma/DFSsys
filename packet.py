@@ -80,7 +80,7 @@ class O_packet(DSPacket):
     def get_alias(self):
         return self.messages['Alias']
 
-    def get_timestamp(self):
+    def get_timestamp(self, formatted=False):
         return self.messages['Timestamp']
 
 

@@ -1,5 +1,7 @@
-from PyQt5 import QtGui
+from datetime import datetime
+
 from PyQt5.QtCore import *
+from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import *
 
 
@@ -13,34 +15,43 @@ from PyQt5.QtWidgets import *
 
 class DFSsysGUI:
 
-    def __init__(self, log_data, onlines_data):
+    def __init__(self, log_data, onlines_data, duplicate_packets):
         self.main_gui = main_gui(log_data)
         self.onlines_gui = onlines_gui(onlines_data)
+        self.dup_gui = duplicates_gui(duplicate_packets)
 
     def trigger_guis(self, w):
         if '-a' in w:
             self.main_gui.thread.start()
             self.onlines_gui.thread.start()
+            self.dup_gui.thread.start()
         elif '-m' in w:
             self.main_gui.thread.start()
         elif '-o' in w:
             self.onlines_gui.thread.start()
+        elif '-d' in w:
+            self.dup_gui.thread.start()
 
     def show_guis(self, w):
         if '-a' in w:
             self.main_gui.show()
             self.onlines_gui.show()
+            self.dup_gui.show()
         elif '-m' in w:
             self.main_gui.show()
         elif '-o' in w:
             self.onlines_gui.show()
+        elif '-d' in w:
+            self.dup_gui.show()
 
     def close_guis(self):
         self.main_gui.do_close = True
         self.onlines_gui.do_close = True
+        self.dup_gui.do_close = True
 
         self.main_gui.close()
         self.onlines_gui.close()
+        self.dup_gui.close()
 
 
 class gui_base(QWidget):
@@ -78,70 +89,6 @@ class gui_base(QWidget):
         self.allow_update = True
 
 
-class main_gui(gui_base):
-
-    def __init__(self, data, parent=None):
-        super().__init__("Log information", parent)
-        self.data = data
-        self.labels = []
-        self.prev_data = data.copy()
-        r = 0
-        for k, v in self.data.items():
-            label = QLabel(self.tr("%s:" % k))
-            labeli = QLabel(self.tr("%s" % str(v)))
-            label.setFrameShape(QFrame.Panel)
-            label.setLineWidth(1)
-            label.setFont(QtGui.QFont('Times', 10))
-
-            labeli.setFrameShape(QFrame.Panel)
-            labeli.setLineWidth(1)
-            labeli.setFont(QtGui.QFont('Times', 10))
-
-            self.layout.addWidget(label, r, 0)
-            self.layout.addWidget(labeli, r, 1)
-            r += 1
-            self.labels.append(labeli)
-
-    def drawUI(self):
-        i = 0
-        for k, v in self.data.items():
-            prev_d = self.prev_data[k]
-            label = self.labels[i]
-            label.setText(self.tr("%s" % str(v)))
-            if prev_d != v:
-                label.setStyleSheet('color: red')
-            else:
-                label.setStyleSheet('color: black')
-            i += 1
-        self.prev_data = self.data.copy()
-
-
-class onlines_gui(gui_base):
-
-    def __init__(self, online_data, parent=None):
-        super().__init__("Online users", parent)
-
-        self.data = online_data
-        self.table = QTableWidget(0, 4)
-
-        self.table.setHorizontalHeaderLabels(["IP Addr", "Alias", "Transmit rate", "Timestamp"])
-        self.layout.addWidget(self.table)
-        self.resize(500, 400)
-
-    def drawUI(self):
-        # first remove all the labels:
-        while self.table.rowCount() > 0:
-            self.table.removeRow(0)
-        r = 0
-        for i in self.data:
-            self.table.insertRow(r)
-            c = 0
-            for k, v in i.items():
-                self.table.setItem(r, c, QTableWidgetItem(self.tr("%s" % str(v))))
-                c += 1
-            r += 1
-
-
 class Worker(QThread):
     output = pyqtSignal()
 
@@ -154,8 +101,99 @@ class Worker(QThread):
         self.wait()
 
     def run(self):
-        # Note: This is never called directly. It is called by Qt once the
-        # thread environment has been set up.
         pass
 
-# TODO: Implement a gui for
+
+class main_gui(gui_base):
+
+    def __init__(self, data, parent=None):
+        super().__init__("Log information", parent)
+        self.data = data
+        self.labels = []
+        self.prev_data = data.copy()
+        self.table = QTableWidget(len(self.data.items()), 2)
+        self.table.setHorizontalHeaderLabels(["Parameter", "Value"])
+        r = 0
+        for k, _ in self.data.items():
+            self.table.setItem(r, 0, QTableWidgetItem(self.tr(k)))
+            r += 1
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.layout.addWidget(self.table)
+        self.resize(300, 600)
+
+    def drawUI(self):
+        r = 0
+        for k, v in self.data.items():
+            prev_d = self.prev_data[k]
+            self.table.setItem(r, 1, QTableWidgetItem(self.tr(str(v))))
+
+            if prev_d != v:
+                self.table.item(r, 1).setForeground(QBrush(QColor(255, 0, 0)))
+            else:
+                self.table.item(r, 1).setForeground(QBrush(QColor(0, 0, 0)))
+            r += 1
+
+        self.prev_data = self.data.copy()
+
+
+class onlines_gui(gui_base):
+
+    def __init__(self, online_data, parent=None):
+        super().__init__("Online users", parent)
+
+        self.data = online_data
+        self.table = QTableWidget(0, 4)
+
+        self.table.setHorizontalHeaderLabels(["IP Addr", "Alias", "Transmit rate", "Timestamp"])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.layout.addWidget(self.table)
+        self.resize(500, 400)
+
+    def drawUI(self):
+        # first remove all the labels:
+        while self.table.rowCount() > 0:
+            self.table.removeRow(0)
+        r = 0
+        for i in self.data:
+            self.table.insertRow(r)
+            c = 0
+            for k, v in i.items():
+                if k == 'timestamp':
+                    v = datetime.fromtimestamp(v / 1000)
+                    self.table.setItem(r, c, QTableWidgetItem(self.tr("%s" % str(v))))
+                else:
+                    self.table.setItem(r, c, QTableWidgetItem(self.tr("%s" % str(v))))
+                c += 1
+            r += 1
+
+
+class duplicates_gui(gui_base):
+
+    def __init__(self, data, parent=None):
+        super().__init__("Duplicate packets", parent)
+        self.data = data
+        self.table = QTableWidget(0, 2)
+
+        self.table.setHorizontalHeaderLabels(["Originator IP", "Originator Packet counter"])
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.layout.addWidget(self.table)
+        self.resize(400, 400)
+
+    def drawUI(self):
+        # first remove all the labels:
+        while self.table.rowCount() > 0:
+            self.table.removeRow(0)
+        r = 0
+        print(self.data)
+        for i in self.data:
+            self.table.insertRow(r)
+            c = 0
+            for k, v in i.items():
+                self.table.setItem(r, c, QTableWidgetItem(self.tr("%s" % str(v))))
+                c += 1
+            r += 1

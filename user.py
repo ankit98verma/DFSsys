@@ -116,7 +116,7 @@ class User:
 
     def setup_main_gui(self):
         app = QApplication([])
-        self.UI = DFSsysGUI(self.log_info, self.data.onlines)
+        self.UI = DFSsysGUI(self.log_info, self.data.onlines, self.data.duplicate_packets)
 
         # thread for starting the regular checking of tables
         th = threading.Thread(target=self.trigger_UI, args=())
@@ -144,9 +144,11 @@ class User:
 
     def o_packet_proc(self, p):
         self.log_info['Rece_o_packet_nos'] += 1
-        # add the user to the
+        # put the timestamp equal to time when received
         p.messages['Timestamp'] = int(round(time.time() * 1000))
+        # add the user to the onlines table
         self.data.add_item_onlines(p)
+        self.data.add_item_duplicate_packets(p)
 
     def req_packet_proc(self, p):
         print('got req packet %s' % self.basic_params['IP_ADDR'])

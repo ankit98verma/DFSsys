@@ -44,7 +44,7 @@ class DataStructures:
         d = {'originator_IP': p.originator_IP, 'originator_packet_counter': p.originator_packet_counter}
         self.duplicate_packets.append(d)
         if len(self.duplicate_packets) > self.basic_params['Duplicate_packet_list_len']:
-            self.duplicate_packets = self.duplicate_packets[1:]
+            self.duplicate_packets.remove(self.duplicate_packets[0])
         return
 
     def is_duplicate(self, p):
