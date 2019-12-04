@@ -1,6 +1,7 @@
 from packet import *
 
 
+# TODO: Exit now working properly
 class DataStructures:
 
     def __init__(self, basic_params):

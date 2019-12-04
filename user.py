@@ -1,4 +1,5 @@
 import inspect
+import ipaddress
 import pickle as pk
 import socket
 import threading
@@ -24,8 +25,9 @@ class User:
 
     def read_config(self, path):
         req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
-               'O_Transmit_Rate': int, 'Broadcast_addr': str, 'Alias': str,
-               'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Data_check_rate': int, 'GUI_update_rate': int}
+               'O_Transmit_Rate': int, 'Alias': str,
+               'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Data_check_rate': int, 'GUI_update_rate': int,
+               'Subnet_mask': str}
         data = dict()
         f = open(path, 'r')
         for line in f.readlines():
@@ -39,6 +41,8 @@ class User:
             if r not in data:
                 print("Invalid '%s file: '%s' parameter is missing" % (path, r))
                 exit(0)
+        net = ipaddress.IPv4Network(data['IP_ADDR'] + '/' + data['Subnet_mask'], False)
+        data['Broadcast_addr'] = str(net.broadcast_address)
         return data
 
     def __init__(self, path="user.config"):
@@ -46,6 +50,7 @@ class User:
         # initialize the protocol and operation related variable
         self.basic_params = self.read_config(path)
         self.basic_params['packet_counter'] = 0
+        self.lock = threading.Lock()
 
         self.log_info = self.basic_params
 
@@ -75,8 +80,9 @@ class User:
         self.threads = []
 
         self.udp_transmit_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udp_transmit_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Transmit_port']))
         self.udp_transmit_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        self.udp_transmit_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # self.udp_transmit_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Transmit_port']))
 
         self.udp_receive_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_receive_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Receive_port']))
@@ -148,7 +154,7 @@ class User:
         p.messages['Timestamp'] = int(round(time.time() * 1000))
         # add the user to the onlines table
         self.data.add_item_onlines(p)
-        self.data.add_item_duplicate_packets(p)
+        self.data.add_item_duplicate_packets(p)  # for testing only
 
     def req_packet_proc(self, p):
         print('got req packet %s' % self.basic_params['IP_ADDR'])
@@ -158,10 +164,9 @@ class User:
 
     def udp_transmit_thread(self):
         while self.is_udp_transmit:
-            #  make a online packet
-            # self.test_counter = self.test_counter - 1     # for testing purpose only
             d = self.basic_params['O_Transmit_Rate'] / 1000
             time.sleep(d)
+            #  make a online packet
             p = O_packet(transmit_rate=self.basic_params['O_Transmit_Rate'], alias=self.basic_params['Alias'],
                          packet_counter=self.basic_params['packet_counter'],
                          originator_packet_counter=self.basic_params['packet_counter'],
@@ -187,11 +192,9 @@ class User:
                 if self.is_verbose:
                     outs = "Thread: udp_receive_thread \n%s" % str(data)
                     self.out_func(outs)
-                #     should we process the packet now???
+
                 if self.data.should_process_packet(data):
                     DSPacket.packet_proc_funcs[data.type](data)
-                else:
-                    print("Nope :(")
 
             except socket.timeout:
                 pass

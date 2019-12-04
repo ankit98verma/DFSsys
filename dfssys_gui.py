@@ -46,8 +46,11 @@ class DFSsysGUI:
 
     def close_guis(self):
         self.main_gui.do_close = True
+        self.main_gui.allow_update = False
         self.onlines_gui.do_close = True
+        self.onlines_gui.allow_update = False
         self.dup_gui.do_close = True
+        self.dup_gui.allow_update = False
 
         self.main_gui.close()
         self.onlines_gui.close()
@@ -189,7 +192,6 @@ class duplicates_gui(gui_base):
         while self.table.rowCount() > 0:
             self.table.removeRow(0)
         r = 0
-        print(self.data)
         for i in self.data:
             self.table.insertRow(r)
             c = 0
