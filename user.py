@@ -2,8 +2,10 @@ import inspect
 import ipaddress
 import pickle as pk
 import socket
+import sys
 import threading
 from datetime import datetime
+from queue import Queue
 
 from PyQt5.QtWidgets import *
 
@@ -19,15 +21,15 @@ class User:
         print("Welcome!\nStarting the UDP transmit and receive thread")
 
     def setup_packet_proc_funcs(self):
-        DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['O_packet']['Type'], self.o_packet_proc)
-        DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Req_packet']['Type'], self.req_packet_proc)
-        DSPacket.set_packet_proc_func(DSPacket.PACKET_TYPES['Res_packet']['Type'], self.res_packet_proc)
+        DSPacket.set_packet_proc_func(O_packet.PACKET_TYPE, self.o_packet_proc)
+        DSPacket.set_packet_proc_func(Req_packet.PACKET_TYPE, self.req_packet_proc)
+        DSPacket.set_packet_proc_func(Res_packet.PACKET_TYPE, self.res_packet_proc)
 
     def read_config(self, path):
         req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
                'O_Transmit_Rate': int, 'Alias': str,
                'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Data_check_rate': int, 'GUI_update_rate': int,
-               'Subnet_mask': str}
+               'Subnet_mask': str, 'UDP_transmit_queue_len': int, 'UDP_receive_queue_len': int}
         data = dict()
         f = open(path, 'r')
         for line in f.readlines():
@@ -46,11 +48,12 @@ class User:
         return data
 
     def __init__(self, path="user.config"):
-        self.test_counter = 2
         # initialize the protocol and operation related variable
         self.basic_params = self.read_config(path)
         self.basic_params['packet_counter'] = 0
+
         self.lock = threading.Lock()
+        self.close_event = threading.Event()
 
         self.log_info = self.basic_params
 
@@ -60,7 +63,13 @@ class User:
         self.log_info['Rece_o_packet_nos'] = 0
         self.log_info['Rece_res_packet_nos'] = 0
         self.log_info['Rece_req_packet_nos'] = 0
+        self.log_info['Tran_Req_packet_nos'] = 0
+        self.log_info['Rece_Req_packet_nos'] = 0
+        self.log_info['Tran_Res_packet_nos'] = 0
+        self.log_info['Rece_Res_packet_nos'] = 0
 
+        self.udp_transmit_queue = Queue(self.basic_params['UDP_transmit_queue_len'])
+        self.udp_receive_queue = Queue(self.basic_params['UDP_receive_queue_len'])
         # setup UI
         self.UI = None
 
@@ -82,16 +91,10 @@ class User:
         self.udp_transmit_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_transmit_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.udp_transmit_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # self.udp_transmit_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Transmit_port']))
 
         self.udp_receive_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_receive_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Receive_port']))
         self.udp_receive_socket.settimeout(1)  # 1 sec timeout for now
-
-        self.is_udp_transmit = True
-        self.is_check_onlines = True
-        self.is_udp_receive = True
-        self.is_update_UI = True
 
         # setup the packet handle functions
         self.setup_packet_proc_funcs()
@@ -113,16 +116,21 @@ class User:
 
         # thread for GUI
         th4 = threading.Thread(target=self.setup_main_gui, args=())
+        self.threads.append(th4)
+
+        th5 = threading.Thread(target=self.online_packet_thread, args=())
+        self.threads.append(th5)
 
         # start all the threads
         th1.start()
         th2.start()
         th3.start()
         th4.start()
+        th5.start()
 
     def setup_main_gui(self):
         app = QApplication([])
-        self.UI = DFSsysGUI(self.log_info, self.data.onlines, self.data.duplicate_packets)
+        self.UI = DFSsysGUI(self.log_info, self.data.onlines, self.data.duplicate_packets, self.lock)
 
         # thread for starting the regular checking of tables
         th = threading.Thread(target=self.trigger_UI, args=())
@@ -134,13 +142,18 @@ class User:
         print('Exited UI')
 
     def trigger_UI(self):
-        while self.is_update_UI:
+        while True:
+            if self.close_event.is_set():
+                break
             self.UI.trigger_guis('-a')
             time.sleep(self.basic_params['GUI_update_rate'] / 1000)  # trigger the update every 100 ms
 
     def check_onlines(self):
-        while self.is_check_onlines:
-            self.data.check_onlines_data(self.basic_params['Removal_margin'])
+        while True:
+            if self.close_event.is_set():
+                break
+            with self.lock:
+                self.data.check_onlines_data(self.basic_params['Removal_margin'])
             time.sleep(self.basic_params['Data_check_rate'] / 1000)
         return
 
@@ -162,40 +175,55 @@ class User:
     def res_packet_proc(self, p):
         print('got res packet %s' % self.basic_params['IP_ADDR'])
 
-    def udp_transmit_thread(self):
-        while self.is_udp_transmit:
+    def online_packet_thread(self):
+        while True:
             d = self.basic_params['O_Transmit_Rate'] / 1000
             time.sleep(d)
-            #  make a online packet
-            p = O_packet(transmit_rate=self.basic_params['O_Transmit_Rate'], alias=self.basic_params['Alias'],
-                         packet_counter=self.basic_params['packet_counter'],
-                         originator_packet_counter=self.basic_params['packet_counter'],
-                         originator_ip=self.basic_params['IP_ADDR'],
-                         sub_type=DSPacket.PACKET_TYPES['O_packet']['Subtype']['Online_packet'],
-                         forwarding_counter=1)
-            self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
-            self.udp_transmit_socket.sendto(pk.dumps(p), (self.basic_params['Broadcast_addr'],
-                                                          self.basic_params['UDP_Receive_port']))
-            self.log_info['Tran_o_packet_nos'] += 1
-            if self.is_verbose:
-                outs = "Thread: udp_transmit_thread \n%s" % str(p)
-                self.out_func(outs)
 
+            if self.close_event.is_set():
+                break
+            with self.lock:
+                if self.udp_transmit_queue.full():
+                    continue
+                p = O_packet(transmit_rate=self.basic_params['O_Transmit_Rate'], alias=self.basic_params['Alias'],
+                             packet_counter=self.basic_params['packet_counter'],
+                             originator_packet_counter=self.basic_params['packet_counter'],
+                             originator_ip=self.basic_params['IP_ADDR'],
+                             sub_type=O_packet.SUB_TYPES_dict['default'],
+                             forwarding_counter=1)
+                self.udp_transmit_queue.put(p)
+                self.log_info['Tran_o_packet_nos'] += 1
+                self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
+
+    def udp_transmit_thread(self):
+        while True:
+            if self.close_event.is_set():
+                break
+            with self.lock:
+                if self.udp_transmit_queue.empty():
+                    continue
+                p = self.udp_transmit_queue.get()
+                self.udp_transmit_socket.sendto(pk.dumps(p), (self.basic_params['Broadcast_addr'],
+                                                              self.basic_params['UDP_Receive_port']))
+                if self.is_verbose:
+                    outs = "Thread: udp_transmit_thread \n%s" % str(p)
+                    self.out_func(outs)
         self.out_func("UDP transmit stopped\n", end="")
         self.udp_transmit_socket.close()
 
     def udp_receive_thread(self):
-        while self.is_udp_receive:
+        while True:
+            if self.close_event.is_set():
+                break
             try:
                 data, addr = self.udp_receive_socket.recvfrom(1024)  # buffer size 1024
                 data = pk.loads(data)
                 if self.is_verbose:
                     outs = "Thread: udp_receive_thread \n%s" % str(data)
                     self.out_func(outs)
-
-                if self.data.should_process_packet(data):
-                    DSPacket.packet_proc_funcs[data.type](data)
-
+                with self.lock:
+                    if self.data.should_process_packet(data):
+                        DSPacket.packet_proc_funcs[data.type](data)
             except socket.timeout:
                 pass
         self.out_func("UDP receive stopped\n", end="")
@@ -240,10 +268,7 @@ class User:
 
     def cmd_exit(self, out_func=print):
         self.is_loop = False
-        self.is_udp_transmit = False
-        self.is_udp_receive = False
-        self.is_check_onlines = False
-        self.is_update_UI = False
+        self.close_event.set()
 
         self.UI.close_guis()
         self.close_threads()
@@ -251,7 +276,7 @@ class User:
 
         if self.out_file is not None:
             self.out_file.close()
-        exit(0)
+        sys.exit(0)
 
     def cmd_help(self, res, out_func=print):
         self.par.show_help(res, out_func=out_func)
@@ -275,7 +300,9 @@ class User:
 
     def cmd_show_gui(self, res):
         key_list = list(res.keys())
-        self.UI.show_guis(key_list)
+        with self.lock:
+            print("alright!")
+            self.UI.show_guis(key_list)
 
     def cmd_start_script(self, res, out_func=print):
         try:

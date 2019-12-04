@@ -15,10 +15,10 @@ from PyQt5.QtWidgets import *
 
 class DFSsysGUI:
 
-    def __init__(self, log_data, onlines_data, duplicate_packets):
-        self.main_gui = main_gui(log_data)
-        self.onlines_gui = onlines_gui(onlines_data)
-        self.dup_gui = duplicates_gui(duplicate_packets)
+    def __init__(self, log_data, onlines_data, duplicate_packets, lock):
+        self.main_gui = main_gui(log_data, lock)
+        self.onlines_gui = onlines_gui(onlines_data, lock)
+        self.dup_gui = duplicates_gui(duplicate_packets, lock)
 
     def trigger_guis(self, w):
         if '-a' in w:
@@ -45,12 +45,10 @@ class DFSsysGUI:
             self.dup_gui.show()
 
     def close_guis(self):
+
         self.main_gui.do_close = True
-        self.main_gui.allow_update = False
         self.onlines_gui.do_close = True
-        self.onlines_gui.allow_update = False
         self.dup_gui.do_close = True
-        self.dup_gui.allow_update = False
 
         self.main_gui.close()
         self.onlines_gui.close()
@@ -59,12 +57,13 @@ class DFSsysGUI:
 
 class gui_base(QWidget):
 
-    def __init__(self, title, parent=None):
+    def __init__(self, title, lock, parent=None):
         QWidget.__init__(self, parent)
         self.do_close = False
         self.allow_update = True
         self.thread = Worker()
         self.layout = QGridLayout()
+        self.lock = lock
 
         self.layout.setContentsMargins(10, 10, 10, 10)
         self.thread.finished.connect(self.updateUi)
@@ -74,17 +73,18 @@ class gui_base(QWidget):
     def updateUi(self):
         if not self.allow_update:
             return
-        self.drawUI()
+        with self.lock:
+            self.drawUI()
 
     def drawUI(self):
         pass
 
     def closeEvent(self, event):
+        self.allow_update = False
         if self.do_close:
             super().closeEvent(event)
         else:
             event.ignore()
-            self.allow_update = False
             self.hide()
 
     def show(self):
@@ -109,8 +109,8 @@ class Worker(QThread):
 
 class main_gui(gui_base):
 
-    def __init__(self, data, parent=None):
-        super().__init__("Log information", parent)
+    def __init__(self, data, lock, parent=None):
+        super().__init__("Log information", lock, parent)
         self.data = data
         self.labels = []
         self.prev_data = data.copy()
@@ -142,8 +142,8 @@ class main_gui(gui_base):
 
 class onlines_gui(gui_base):
 
-    def __init__(self, online_data, parent=None):
-        super().__init__("Online users", parent)
+    def __init__(self, online_data, lock, parent=None):
+        super().__init__("Online users", lock, parent)
 
         self.data = online_data
         self.table = QTableWidget(0, 4)
@@ -176,8 +176,8 @@ class onlines_gui(gui_base):
 
 class duplicates_gui(gui_base):
 
-    def __init__(self, data, parent=None):
-        super().__init__("Duplicate packets", parent)
+    def __init__(self, data, lock, parent=None):
+        super().__init__("Duplicate packets", lock, parent)
         self.data = data
         self.table = QTableWidget(0, 2)
 
