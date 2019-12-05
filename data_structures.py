@@ -1,4 +1,5 @@
 import ipaddress
+from queue import Queue
 
 from packet import *
 
@@ -6,6 +7,25 @@ from packet import *
 class DFSsysData:
 
     def __init__(self, path):
+        self.path = path
+        self.basic_params = self.read_config()
+        self.basic_params['packet_counter'] = 0
+
+        self.log_info = self.basic_params
+
+        self.log_info['Tran_o_packet_nos'] = 0
+        self.log_info['Tran_res_packet_nos'] = 0
+        self.log_info['Tran_req_packet_nos'] = 0
+        self.log_info['Rece_o_packet_nos'] = 0
+        self.log_info['Rece_res_packet_nos'] = 0
+        self.log_info['Rece_req_packet_nos'] = 0
+        self.log_info['Tran_Req_packet_nos'] = 0
+        self.log_info['Rece_Req_packet_nos'] = 0
+        self.log_info['Tran_Res_packet_nos'] = 0
+        self.log_info['Rece_Res_packet_nos'] = 0
+
+        self.udp_transmit_queue = Queue(self.basic_params['UDP_transmit_queue_len'])
+        self.udp_receive_queue = Queue(self.basic_params['UDP_receive_queue_len'])
 
     def read_config(self):
         req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
@@ -24,7 +44,7 @@ class DFSsysData:
         f.close()
         for r in req:
             if r not in data:
-                print("Invalid '%s file: '%s' parameter is missing" % (path, r))
+                print("Invalid '%s file: '%s' parameter is missing" % (self.path, r))
                 exit(0)
         net = ipaddress.IPv4Network(data['IP_ADDR'] + '/' + data['Subnet_mask'], False)
         data['Broadcast_addr'] = str(net.broadcast_address)
