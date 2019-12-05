@@ -8,12 +8,10 @@ from PyQt5.QtWidgets import *
 # Disabling the warnings
 # def handler(msg_type, msg_log_context, msg_string):
 #     pass
-
-
 # qInstallMessageHandler(handler)
 
 
-class DFSsysGUI:
+class DFSsysGUIHandle:
 
     def __init__(self, log_data, onlines_data, duplicate_packets, lock):
         self.main_gui = main_gui(log_data, lock)
