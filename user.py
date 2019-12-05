@@ -70,6 +70,7 @@ class User:
 
         self.udp_transmit_queue = Queue(self.basic_params['UDP_transmit_queue_len'])
         self.udp_receive_queue = Queue(self.basic_params['UDP_receive_queue_len'])
+
         # setup UI
         self.UI = None
 
@@ -192,7 +193,6 @@ class User:
                              sub_type=O_packet.SUB_TYPES_dict['default'],
                              forwarding_counter=1)
                 self.udp_transmit_queue.put(p)
-                self.log_info['Tran_o_packet_nos'] += 1
                 self.basic_params['packet_counter'] = (self.basic_params['packet_counter'] + 1) % (2 ** 32)
 
     def udp_transmit_thread(self):
@@ -205,6 +205,7 @@ class User:
                 p = self.udp_transmit_queue.get()
                 self.udp_transmit_socket.sendto(pk.dumps(p), (self.basic_params['Broadcast_addr'],
                                                               self.basic_params['UDP_Receive_port']))
+                self.log_info['Tran_o_packet_nos'] += 1
                 if self.is_verbose:
                     outs = "Thread: udp_transmit_thread \n%s" % str(p)
                     self.out_func(outs)
@@ -222,6 +223,9 @@ class User:
                     outs = "Thread: udp_receive_thread \n%s" % str(data)
                     self.out_func(outs)
                 with self.lock:
+                    if self.udp_receive_queue.full():
+                        self.out_func("UDP Receive queue is full ")
+                        continue
                     if self.data.should_process_packet(data):
                         DSPacket.packet_proc_funcs[data.type](data)
             except socket.timeout:

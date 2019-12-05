@@ -1,6 +1,34 @@
+import ipaddress
+
 from packet import *
 
 
+class DFSsysData:
+
+    def __init__(self, path):
+
+    def read_config(self):
+        req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
+               'O_Transmit_Rate': int, 'Alias': str,
+               'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Data_check_rate': int,
+               'GUI_update_rate': int,
+               'Subnet_mask': str, 'UDP_transmit_queue_len': int, 'UDP_receive_queue_len': int}
+        data = dict()
+        f = open(self.path, 'r')
+        for line in f.readlines():
+            if line.strip(' ')[0] == "#":
+                line = line.strip('#')
+                line = line.strip('\n')
+                words = line.split(':')
+                data[words[0].strip(' ')] = req[words[0].strip(' ')](words[1].strip(' '))
+        f.close()
+        for r in req:
+            if r not in data:
+                print("Invalid '%s file: '%s' parameter is missing" % (path, r))
+                exit(0)
+        net = ipaddress.IPv4Network(data['IP_ADDR'] + '/' + data['Subnet_mask'], False)
+        data['Broadcast_addr'] = str(net.broadcast_address)
+        return data
 class DataStructures:
 
     def __init__(self, basic_params):
