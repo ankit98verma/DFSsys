@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import *
 # def handler(msg_type, msg_log_context, msg_string):
 #     pass
 # qInstallMessageHandler(handler)
-
+# TODO: UI is causing the problem in closing. Fix it!
 
 class DFSsysGUIHandle:
 

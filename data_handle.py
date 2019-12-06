@@ -44,6 +44,7 @@ class DFSsysDataHandle:
         self.tcp_transmit_queue = Queue(self.basic_params['TCP_transmit_queue_len'])
         self.tcp_receive_queue = Queue(self.basic_params['TCP_receive_queue_len'])
         self.requests_dict = {}
+        self.responses_dict = {}
 
         # all the sockets
         self.udp_transmit_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -98,6 +99,12 @@ class DFSsysDataHandle:
 
     def add_req_config_param(self, key, value_type):
         self.req[key] = value_type
+
+    def add_to_transmit_queue(self, queue, p):
+        queue.put(p)
+        self.log_info['Tran_req_packet_nos'] += 1
+        self.basic_params['packet_counter'] += 1
+        self.basic_params['packet_counter'] %= (2 ** 32)
 
 
 class DataStructures:

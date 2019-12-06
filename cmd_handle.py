@@ -65,7 +65,10 @@ class DFSsysCmdHandle:
         self.is_loop = False
         self.data.close_event.set()
 
-        self.data.UI.close_guis()
+        try:
+            self.data.UI.close_guis()
+        except AttributeError:
+            pass
         for t in self.data.threads:
             t.join()
         out_func('Exiting')
@@ -111,11 +114,9 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['file'],
                            forwarding_counter=1)
             with self.data.lock:
-                self.data.udp_transmit_queue.put(p)
-                self.data.log_info['Tran_req_packet_nos'] += 1
-                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
-                self.data.basic_params['packet_counter'] += 1
-                self.data.basic_params['packet_counter'] %= (2 ** 32)
+                self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
+                self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
+                self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
 
         if '-o' in key_list:
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
@@ -123,13 +124,11 @@ class DFSsysCmdHandle:
                            originator_packet_counter=self.data.basic_params['packet_counter'],
                            originator_ip=self.data.basic_params['IP_ADDR'],
                            sub_type=Res_packet.SUB_TYPES_dict['Online_users'],
-                           forwarding_counter=1)
+                           forwarding_counter=2)
             with self.data.lock:
-                self.data.udp_transmit_queue.put(p)
-                self.data.log_info['Tran_req_packet_nos'] += 1
-                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
-                self.data.basic_params['packet_counter'] += 1
-                self.data.basic_params['packet_counter'] %= (2 ** 32)
+                self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
+                self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
+                self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
 
         if '-pubf' in key_list:
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
@@ -139,11 +138,9 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['Public_files'],
                            forwarding_counter=1)
             with self.data.lock:
-                self.data.udp_transmit_queue.put(p)
-                self.data.log_info['Tran_req_packet_nos'] += 1
-                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
-                self.data.basic_params['packet_counter'] += 1
-                self.data.basic_params['packet_counter'] %= (2 ** 32)
+                self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
+                self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
+                self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
 
         if '-prif' in key_list:
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
@@ -153,11 +150,9 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['Private_files'],
                            forwarding_counter=1)
             with self.data.lock:
-                self.data.udp_transmit_queue.put(p)
-                self.data.log_info['Tran_req_packet_nos'] += 1
-                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
-                self.data.basic_params['packet_counter'] += 1
-                self.data.basic_params['packet_counter'] %= (2 ** 32)
+                self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
+                self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
+                self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
 
     def cmd_start_script(self, res, out_func=print):
         try:

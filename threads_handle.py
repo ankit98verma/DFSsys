@@ -30,7 +30,7 @@ class DFSsysThreadHandle:
 
         # thread for GUI
         th4 = threading.Thread(target=self.setup_main_gui, args=())
-        self.data.threads.append(th4)
+        # self.data.threads.append(th4)
 
         th5 = threading.Thread(target=self.online_packet_thread, args=())
         # self.data.threads.append(th5)
@@ -47,16 +47,20 @@ class DFSsysThreadHandle:
         th9 = threading.Thread(target=self.tcp_transmit_thread, args=())
         self.data.threads.append(th9)
 
+        th10 = threading.Thread(target=self.responses_manager, args=())
+        self.data.threads.append(th10)
+
         # start all the data.threads
         th1.start()
         th2.start()
         th3.start()
-        th4.start()
+        # th4.start()
         # th5.start()
         th6.start()
         th7.start()
         th8.start()
         th9.start()
+        th10.start()
 
     # UI related threads
     def setup_main_gui(self):
@@ -86,6 +90,7 @@ class DFSsysThreadHandle:
         while True:
             if self.data.close_event.is_set():
                 break
+            time.sleep(self.data.basic_params['Requests_check_rate'] / 1000)
             with self.data.lock:
                 curr_time = int(round(time.time() * 1000))
                 remove_list = []
@@ -95,7 +100,8 @@ class DFSsysThreadHandle:
                         remove_list.append(k)
                 for l in remove_list:
                     self.data.requests_dict.pop(l)
-            time.sleep(self.data.basic_params['Requests_check_rate'] / 1000)
+                    self.data.responses_dict[l]['start_proc'] = 1
+
         print("Exiting requests manager\n", end="")
 
     def onlines_manager(self):
@@ -127,9 +133,30 @@ class DFSsysThreadHandle:
                     self.data.udp_transmit_queue.put(p)
             # call the packet processing function
             with self.data.lock:
-                if self.data.data_struct.should_process_packet(p):
-                    DSPacket.packet_proc_funcs[p.type](p)
+                is_proc = self.data.data_struct.should_process_packet(p)
+            if True:
+                DSPacket.packet_proc_funcs[p.type](p)
+            else:
+                print(":(")
         print("Exiting received packet processing thread\n", end="")
+
+    def responses_manager(self):
+        while True:
+            if self.data.close_event.is_set():
+                break
+            with self.data.lock:
+                local_dict = self.data.responses_dict.copy()
+            remove_list = []
+            for k, v in local_dict.items():
+                if v['start_proc'] == 1:
+                    #  TODO: process the list of responses
+                    for p in v['list']:
+                        self.data.log_func("Got following response\n%s" % str(p), end="")
+                    remove_list.append(k)
+            for l in remove_list:
+                with self.data.lock:
+                    self.data.responses_dict.pop(l)
+        print("Exited the Responses manager")
 
     def online_packet_thread(self):
         while True:

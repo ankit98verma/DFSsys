@@ -143,3 +143,9 @@ class Res_packet(DSPacket):
 
     def get_message(self):
         return self.messages
+
+    @staticmethod
+    def response_list_processor(list):
+        f = list[0]
+        if f.sub_type == Res_packet.SUB_TYPES_dict['Online_users']:
+            pass
