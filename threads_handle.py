@@ -33,7 +33,7 @@ class DFSsysThreadHandle:
         self.data.threads.append(th4)
 
         th5 = threading.Thread(target=self.online_packet_thread, args=())
-        self.data.threads.append(th5)
+        # self.data.threads.append(th5)
 
         th6 = threading.Thread(target=self.process_packet_thread, args=())
         self.data.threads.append(th6)
@@ -52,7 +52,7 @@ class DFSsysThreadHandle:
         th2.start()
         th3.start()
         th4.start()
-        th5.start()
+        # th5.start()
         th6.start()
         th7.start()
         th8.start()

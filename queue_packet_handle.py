@@ -26,6 +26,7 @@ class DFSsysQueuePacketHandle:
 
     # handling the received request packets
     def req_packet_proc(self, p):
+        print("Starting the processing of req packet")
         self.data.log_info['Rece_req_packet_nos'] += 1
         self.data.data_struct.add_item_duplicate_packets(p)
         # make a response packet first
@@ -52,6 +53,8 @@ class DFSsysQueuePacketHandle:
         else:
             self.data.udp_transmit_queue.put(p_res)
         self.data.log_info['Tran_res_packet_nos'] += 1
+        self.data.basic_params['packet_counter'] += 1
+        self.data.basic_params['packet_counter'] %= (2 ** 32)
 
     # handling the received response packets
     def res_packet_proc(self, p):

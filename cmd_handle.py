@@ -115,6 +115,7 @@ class DFSsysCmdHandle:
                 self.data.log_info['Tran_req_packet_nos'] += 1
                 self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
                 self.data.basic_params['packet_counter'] += 1
+                self.data.basic_params['packet_counter'] %= (2 ** 32)
 
         if '-o' in key_list:
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
@@ -128,6 +129,7 @@ class DFSsysCmdHandle:
                 self.data.log_info['Tran_req_packet_nos'] += 1
                 self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
                 self.data.basic_params['packet_counter'] += 1
+                self.data.basic_params['packet_counter'] %= (2 ** 32)
 
         if '-pubf' in key_list:
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
@@ -141,6 +143,7 @@ class DFSsysCmdHandle:
                 self.data.log_info['Tran_req_packet_nos'] += 1
                 self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
                 self.data.basic_params['packet_counter'] += 1
+                self.data.basic_params['packet_counter'] %= (2 ** 32)
 
         if '-prif' in key_list:
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
@@ -154,6 +157,7 @@ class DFSsysCmdHandle:
                 self.data.log_info['Tran_req_packet_nos'] += 1
                 self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
                 self.data.basic_params['packet_counter'] += 1
+                self.data.basic_params['packet_counter'] %= (2 ** 32)
 
     def cmd_start_script(self, res, out_func=print):
         try:
