@@ -33,7 +33,7 @@ class DFSsysThreadHandle:
         self.data.threads.append(th4)
 
         th5 = threading.Thread(target=self.online_packet_thread, args=())
-        self.data.threads.append(th5)
+        # self.data.threads.append(th5)
 
         th6 = threading.Thread(target=self.process_packet_thread, args=())
         self.data.threads.append(th6)
@@ -41,7 +41,12 @@ class DFSsysThreadHandle:
         th7 = threading.Thread(target=self.requests_manager, args=())
         self.data.threads.append(th7)
 
-        # Request_TOL
+        th8 = threading.Thread(target=self.tcp_listen_thread, args=())
+        self.data.threads.append(th8)
+
+        th9 = threading.Thread(target=self.tcp_transmit_thread, args=())
+        self.data.threads.append(th9)
+
         # start all the data.threads
         th1.start()
         th2.start()
@@ -50,6 +55,8 @@ class DFSsysThreadHandle:
         # th5.start()
         th6.start()
         th7.start()
+        th8.start()
+        th9.start()
 
     # UI related threads
     def setup_main_gui(self):
@@ -72,6 +79,7 @@ class DFSsysThreadHandle:
                 break
             self.data.UI.trigger_guis('-a')
             time.sleep(self.data.basic_params['GUI_update_rate'] / 1000)
+        print("Exiting trigger UI thread\n", end="")
 
     # database managers
     def requests_manager(self):
@@ -88,6 +96,7 @@ class DFSsysThreadHandle:
                 for l in remove_list:
                     self.data.requests_dict.pop(l)
             time.sleep(self.data.basic_params['Requests_check_rate'] / 1000)
+        print("Exiting requests manager\n", end="")
 
     def onlines_manager(self):
         while True:
@@ -96,7 +105,7 @@ class DFSsysThreadHandle:
             with self.data.lock:
                 self.data.data_struct.check_onlines_data(self.data.basic_params['Removal_margin'])
             time.sleep(self.data.basic_params['Onlines_check_rate'] / 1000)
-        return
+        print("Exiting onlines manager thread\n", end="")
 
     # packet related threads
     def process_packet_thread(self):
@@ -104,17 +113,23 @@ class DFSsysThreadHandle:
             if self.data.close_event.is_set():
                 break
             with self.data.lock:
-                if self.data.udp_receive_queue.empty():
-                    continue
-                p = self.data.udp_receive_queue.get()
-
-                if p.forwarding_counter > 1:
-                    # if forwarding is required then put it in the transmit queue
-                    p.forwarding_counter -= 1
+                if not self.data.udp_receive_queue.empty():
+                    p = self.data.udp_receive_queue.get()
+                else:
+                    if not self.data.tcp_receive_queue.empty():
+                        p = self.data.tcp_receive_queue.get()
+                    else:
+                        continue
+            if p.forwarding_counter > 1:
+                # if forwarding is required then put it in the transmit queue
+                p.forwarding_counter -= 1
+                with self.data.lock:
                     self.data.udp_transmit_queue.put(p)
-                # call the packet processing function
+            # call the packet processing function
+            with self.data.lock:
                 if self.data.data_struct.should_process_packet(p):
                     DSPacket.packet_proc_funcs[p.type](p)
+        print("Exiting received packet processing thread\n", end="")
 
     def online_packet_thread(self):
         while True:
@@ -137,6 +152,7 @@ class DFSsysThreadHandle:
                 self.data.log_info['Tran_o_packet_nos'] += 1
                 self.data.basic_params['packet_counter'] += 1
                 self.data.basic_params['packet_counter'] %= (2 ** 32)
+        print("Exiting online packet generation thread\n", end="")
 
     def udp_transmit_thread(self):
         while True:
@@ -146,8 +162,8 @@ class DFSsysThreadHandle:
                 if self.data.udp_transmit_queue.empty():
                     continue
                 p = self.data.udp_transmit_queue.get()
-                self.data.udp_transmit_socket.sendto(pk.dumps(p), (self.data.basic_params['Broadcast_addr'],
-                                                                   self.data.basic_params['UDP_Receive_port']))
+            self.data.udp_transmit_socket.sendto(pk.dumps(p), (self.data.basic_params['Broadcast_addr'],
+                                                               self.data.basic_params['UDP_Receive_port']))
             if self.data.is_verbose:
                 outs = "Thread: udp_transmit_thread \n%s" % str(p)
                 self.data.log_func(outs)
@@ -174,3 +190,53 @@ class DFSsysThreadHandle:
                 pass
         self.data.udp_receive_socket.close()
         print("UDP receive stopped\n", end="")
+
+    def tcp_listen_thread(self):
+        while True:
+            if self.data.close_event.is_set():
+                break
+            try:
+                conn, addr = self.data.tcp_listen_socket.accept()
+                # self.data.out_func("Connection for a response got from: %s" % str(addr))
+                th_rec = threading.Thread(target=self.tcp_receive_thread, args=(conn,))
+                with self.data.lock:
+                    self.data.threads.append(th_rec)
+                th_rec.start()
+            except socket.timeout:
+                pass
+        print("TCP listen stopped\n", end="")
+
+    def tcp_receive_thread(self, conn):
+        data = bytes()
+        while True:
+            data_tmp = conn.recv(1024)
+            if not data_tmp:
+                break
+            data += data_tmp
+        p = pk.loads(data)
+        with self.data.lock:
+            self.data.tcp_receive_queue.put(p)
+        print("Exiting tcp receive thread\n", end="")
+
+    def tcp_transmit_thread(self):
+        while True:
+            if self.data.close_event.is_set():
+                break
+            with self.data.lock:
+                if self.data.tcp_transmit_queue.empty():
+                    continue
+                p = self.data.tcp_transmit_queue.get()
+            tran_soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            tran_soc.settimeout(1)  # 1 sec for timeout
+            ip = p.get_req_originator_ip()
+            try:
+                tran_soc.connect((ip, self.data.basic_params['TCP_Listen_port']))
+                tran_soc.send(pk.dumps(p))
+                tran_soc.close()
+            except socket.timeout:
+                print("Can't send response packet")
+
+            if self.data.is_verbose:
+                outs = "Thread: tcp_transmit_thread \n%s" % str(p)
+                self.data.log_func(outs)
+        print("TCP transmit stopped\n", end="")

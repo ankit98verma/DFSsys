@@ -51,7 +51,12 @@ class DFSsysCmdHandle:
 
         self.par.add_command('req', "Sends request packet", function=self.cmd_req)
         self.par.get_command('req').add_optional_arguments('-f', '--file', 'Request a file', param_type=None)
-        # TODO: ADD other requests too.
+        self.par.get_command('req').add_optional_arguments('-o', '--onlines', 'Request the list of online users',
+                                                           param_type=None)
+        self.par.get_command('req').add_optional_arguments('-pubf', '--public_files', 'Request the list of public files'
+                                                           , param_type=None)
+        self.par.get_command('req').add_optional_arguments('-prif', '--private_files', 'Request the list of public '
+                                                                                       'files ', param_type=None)
 
         self.par.add_command('help', "Gives the details of all the commands of session management",
                              function=self.cmd_help)
@@ -96,6 +101,7 @@ class DFSsysCmdHandle:
 
     def cmd_req(self, res):
         key_list = list(res.keys())
+        # TODO: implement other options too!
         if '-f' in key_list:
             fn = input(self.input_string + "Enter file name (with file type extension):")
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'], file_name=fn,

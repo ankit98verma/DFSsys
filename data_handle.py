@@ -41,6 +41,8 @@ class DFSsysDataHandle:
         # all the queues and dictionaries
         self.udp_transmit_queue = Queue(self.basic_params['UDP_transmit_queue_len'])
         self.udp_receive_queue = Queue(self.basic_params['UDP_receive_queue_len'])
+        self.tcp_transmit_queue = Queue(self.basic_params['TCP_transmit_queue_len'])
+        self.tcp_receive_queue = Queue(self.basic_params['TCP_receive_queue_len'])
         self.requests_dict = {}
 
         # all the sockets
@@ -50,6 +52,11 @@ class DFSsysDataHandle:
         self.udp_receive_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_receive_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['UDP_Receive_port']))
         self.udp_receive_socket.settimeout(1)  # 1 sec timeout for now
+
+        self.tcp_listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_listen_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['TCP_Listen_port']))
+        self.tcp_listen_socket.settimeout(1)  # 1 sec timeout for now
+        self.tcp_listen_socket.listen(10)  # 10 connections at a time for now
 
     def setup_log(self):
         self.log_info = self.basic_params
@@ -66,11 +73,12 @@ class DFSsysDataHandle:
 
     def read_config(self):
         self.req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
-                    'O_Transmit_Rate': int, 'Alias': str,
+                    'O_Transmit_Rate': int, 'Alias': str, 'TCP_Listen_port': int, 'TCP_receive_queue_len': int,
                     'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Onlines_check_rate': int,
                     'Requests_check_rate': int, 'GUI_update_rate': int, 'Response_over_type': int,
                     'Subnet_mask': str, 'UDP_transmit_queue_len': int, 'UDP_receive_queue_len': int,
-                    'Pub_file_directory': str, 'Pri_file_directory': str, 'Rec_directory': str, 'Request_TOL': int}
+                    'Pub_file_directory': str, 'Pri_file_directory': str, 'Rec_directory': str, 'Request_TOL': int,
+                    'TCP_transmit_queue_len': int}
         data = dict()
         f = open(self.path, 'r')
         for line in f.readlines():
