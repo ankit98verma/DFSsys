@@ -101,7 +101,7 @@ class DFSsysCmdHandle:
 
     def cmd_req(self, res):
         key_list = list(res.keys())
-        # TODO: implement other options too!
+
         if '-f' in key_list:
             fn = input(self.input_string + "Enter file name (with file type extension):")
             p = Req_packet(res_type=self.data.basic_params['Response_over_type'], file_name=fn,
@@ -109,6 +109,45 @@ class DFSsysCmdHandle:
                            originator_packet_counter=self.data.basic_params['packet_counter'],
                            originator_ip=self.data.basic_params['IP_ADDR'],
                            sub_type=Res_packet.SUB_TYPES_dict['file'],
+                           forwarding_counter=1)
+            with self.data.lock:
+                self.data.udp_transmit_queue.put(p)
+                self.data.log_info['Tran_req_packet_nos'] += 1
+                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
+                self.data.basic_params['packet_counter'] += 1
+
+        if '-o' in key_list:
+            p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
+                           packet_counter=self.data.basic_params['packet_counter'],
+                           originator_packet_counter=self.data.basic_params['packet_counter'],
+                           originator_ip=self.data.basic_params['IP_ADDR'],
+                           sub_type=Res_packet.SUB_TYPES_dict['Online_users'],
+                           forwarding_counter=1)
+            with self.data.lock:
+                self.data.udp_transmit_queue.put(p)
+                self.data.log_info['Tran_req_packet_nos'] += 1
+                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
+                self.data.basic_params['packet_counter'] += 1
+
+        if '-pubf' in key_list:
+            p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
+                           packet_counter=self.data.basic_params['packet_counter'],
+                           originator_packet_counter=self.data.basic_params['packet_counter'],
+                           originator_ip=self.data.basic_params['IP_ADDR'],
+                           sub_type=Res_packet.SUB_TYPES_dict['Public_files'],
+                           forwarding_counter=1)
+            with self.data.lock:
+                self.data.udp_transmit_queue.put(p)
+                self.data.log_info['Tran_req_packet_nos'] += 1
+                self.data.requests_dict[self.data.basic_params['packet_counter']] = int(round(time.time() * 1000))
+                self.data.basic_params['packet_counter'] += 1
+
+        if '-prif' in key_list:
+            p = Req_packet(res_type=self.data.basic_params['Response_over_type'],
+                           packet_counter=self.data.basic_params['packet_counter'],
+                           originator_packet_counter=self.data.basic_params['packet_counter'],
+                           originator_ip=self.data.basic_params['IP_ADDR'],
+                           sub_type=Res_packet.SUB_TYPES_dict['Private_files'],
                            forwarding_counter=1)
             with self.data.lock:
                 self.data.udp_transmit_queue.put(p)
