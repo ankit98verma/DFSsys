@@ -1,0 +1,2 @@
+set_out -fn log.txt
+set_bool -v true

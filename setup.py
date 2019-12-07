@@ -1,18 +1,12 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
-    name='DFSSYS',
+    name='DDS',
     version='1.0.0',
-    url='',
-    license='UNKNOWN',
+    packages=['DDS'],
+    url='https://github.com/ankit98verma/DFSsys',
+    license='Caltech',
     author='Ankit',
     author_email='ankitvermajnp@gmail.com',
-    description='Distributed discovery and data sharing system',
-    packages=find_packages(),
-    install_requires=['PyQt5'],
-    entry_points={
-        'console_scripts': [
-            'dfssys=DFSSYS.user:main'
-        ]
-    }
+    description='Distributed discovery and data sharing system'
 )
