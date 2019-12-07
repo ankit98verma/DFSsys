@@ -9,7 +9,7 @@ setup(
     author_email='ankitvermajnp@gmail.com',
     description='Distributed discovery and data sharing system',
     packages=find_packages(),
-    install_requires=['pyqt'],
+    install_requires=['PyQt5'],
     entry_points={
         'console_scripts': ['dfssys=DFFSYS.user.main']
     }
