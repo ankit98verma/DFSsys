@@ -1,7 +1,6 @@
 import inspect
 import sys
 from datetime import datetime
-
 from packet import *
 from strargparser import *
 
@@ -75,6 +74,7 @@ class DFSsysCmdHandle:
 
         if self.data.log_file is not None:
             self.data.log_file.close()
+        input(self.input_string+"Press enter (return) key to exit")
         sys.exit(0)
 
     def cmd_help(self, res, out_func=print):
@@ -124,7 +124,7 @@ class DFSsysCmdHandle:
                            originator_packet_counter=self.data.basic_params['packet_counter'],
                            originator_ip=self.data.basic_params['IP_ADDR'],
                            sub_type=Res_packet.SUB_TYPES_dict['Online_users'],
-                           forwarding_counter=2)
+                           forwarding_counter=1)
             with self.data.lock:
                 self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}

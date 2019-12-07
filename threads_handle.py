@@ -1,9 +1,8 @@
 import pickle as pk
 import socket
 import threading
-
 from PyQt5.QtWidgets import *
-
+import os
 from gui_handle import DFSsysGUIHandle
 from packet import *
 
@@ -15,7 +14,7 @@ class DFSsysThreadHandle:
         self.start_threads()  # should be the last line in the __init__ function
 
     def start_threads(self):
-        print("Starting the UDP thread")
+        print("Starting all the threads")
         # thread for starting the UDP transmit
         th1 = threading.Thread(target=self.udp_transmit_thread, args=())
         self.data.threads.append(th1)
@@ -29,11 +28,11 @@ class DFSsysThreadHandle:
         self.data.threads.append(th3)
 
         # thread for GUI
-        th4 = threading.Thread(target=self.setup_main_gui, args=())
+        # th4 = threading.Thread(target=self.setup_main_gui, args=())
         # self.data.threads.append(th4)
 
         th5 = threading.Thread(target=self.online_packet_thread, args=())
-        # self.data.threads.append(th5)
+        self.data.threads.append(th5)
 
         th6 = threading.Thread(target=self.process_packet_thread, args=())
         self.data.threads.append(th6)
@@ -50,17 +49,25 @@ class DFSsysThreadHandle:
         th10 = threading.Thread(target=self.responses_manager, args=())
         self.data.threads.append(th10)
 
+        th11 = threading.Thread(target=self.tcp_file_listen_thread, args=())
+        self.data.threads.append(th11)
+
+        th12 = threading.Thread(target=self.tcp_file_request_thread, args=())
+        self.data.threads.append(th12)
+
         # start all the data.threads
         th1.start()
         th2.start()
         th3.start()
         # th4.start()
-        # th5.start()
+        th5.start()
         th6.start()
         th7.start()
         th8.start()
         th9.start()
         th10.start()
+        th11.start()
+        th12.start()
 
     # UI related threads
     def setup_main_gui(self):
@@ -96,7 +103,6 @@ class DFSsysThreadHandle:
                 remove_list = []
                 for k, v in self.data.requests_dict.items():
                     if (curr_time - v) > self.data.basic_params['Request_TOL']:
-                        print("Removing the element %d" % k)
                         remove_list.append(k)
                 for l in remove_list:
                     self.data.requests_dict.pop(l)
@@ -134,7 +140,7 @@ class DFSsysThreadHandle:
             # call the packet processing function
             with self.data.lock:
                 is_proc = self.data.data_struct.should_process_packet(p)
-            if True:
+            if is_proc:
                 DSPacket.packet_proc_funcs[p.type](p)
             else:
                 print(":(")
@@ -149,14 +155,12 @@ class DFSsysThreadHandle:
             remove_list = []
             for k, v in local_dict.items():
                 if v['start_proc'] == 1:
-                    #  TODO: process the list of responses
-                    for p in v['list']:
-                        self.data.log_func("Got following response\n%s" % str(p), end="")
+                    Res_packet.response_list_processor(v['list'], self.data)
                     remove_list.append(k)
             for l in remove_list:
                 with self.data.lock:
                     self.data.responses_dict.pop(l)
-        print("Exited the Responses manager")
+        print("Exited the Responses manager\n", end="")
 
     def online_packet_thread(self):
         while True:
@@ -267,3 +271,99 @@ class DFSsysThreadHandle:
                 outs = "Thread: tcp_transmit_thread \n%s" % str(p)
                 self.data.log_func(outs)
         print("TCP transmit stopped\n", end="")
+
+    def tcp_file_listen_thread(self):
+        while True:
+            if self.data.close_event.is_set():
+                break
+            try:
+                conn, addr = self.data.tcp_file_listen_socket.accept()
+                # self.data.out_func("Connection for a response got from: %s" % str(addr))
+                th_file_tran = threading.Thread(target=self.tcp_file_transmit_thread, args=(conn, addr,))
+                with self.data.lock:
+                    self.data.threads.append(th_file_tran)
+                th_file_tran.start()
+            except socket.timeout:
+                pass
+        print("TCP File listen stopped\n", end="")
+
+    def tcp_file_transmit_thread(self, conn, addr):
+        conn.settimeout(5)  # 5 second timeout
+        try:
+            # first get file name
+            fn = conn.recv(1024)  # buffer size
+            fn = fn.decode()
+            f = self.data.basic_params['Pub_file_directory'] + fn
+            if fn in self.data.data_struct.private_files:
+                k = input("%s is requesting %s (private) file. Send? (y/n - type twice) " % (str(addr), fn))
+                f = self.data.basic_params['Pri_file_directory'] + fn
+                size = os.path.getsize(f)
+                if k != 'y':
+                    # send OK to the other end
+                    conn.send(pk.dumps({'close': 0}))
+                    conn.close()
+                    return
+            else:
+                size = os.path.getsize(f)
+            conn.send(pk.dumps({'ok': size}))
+            # get the start and
+            d = conn.recv(1024)
+            if d.decode() != 'start':
+                conn.close()
+                return
+            with open(f, 'rb') as f:
+                bytes_to_send = f.read()
+            bytes_sent = conn.send(bytes_to_send)
+            total_bytes = bytes_sent
+            while bytes_sent > 0:
+                try:
+                    bytes_sent = conn.send(bytes_to_send[bytes_sent:])
+                    total_bytes += bytes_sent
+                except:
+                    if total_bytes != len(bytes_to_send):
+                        print("Connection closed by remote host.")
+                    break
+
+        except socket.timeout:
+            pass
+        finally:
+            conn.close()
+
+    def tcp_file_request_thread(self):
+        while True:
+            if self.data.close_event.is_set():
+                break
+            if self.data.file_req_event.wait(1):  # 1 sec timeout
+                print("Requesting the file %s from %s " % (self.data.file_req_name, self.data.file_req_ip))
+
+                self.data.file_req_event.clear()
+
+                th = threading.Thread(target=self.tcp_file_receive_thread, args=())
+                self.data.threads.append(th)
+                th.start()
+
+        print("Exiting the file request thread\n", end="")
+
+    def tcp_file_receive_thread(self):
+        # Only for receiving the file
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)  # 5 sec timeout
+        try:
+            sock.connect((self.data.file_req_ip, self.data.basic_params['TCP_file_listen_port']))
+            sock.send(self.data.file_req_name.encode())
+            d = pk.loads(sock.recv(1024))
+            if 'close' in list(d.keys()):
+                print("File Denied.")
+                sock.close()
+                return
+            file_size = d['ok']
+            rec_bytes = 0
+            with open(self.data.basic_params["Rec_directory"] + self.data.file_req_name, 'wb') as file_obj:
+                sock.send('start'.encode())
+                while rec_bytes < file_size:
+                    data = sock.recv(1024)
+                    rec_bytes += len(data)
+                    file_obj.write(data)
+            print("received %s file" % self.data.file_req_name)
+        except socket.timeout:
+            print("Connection cannot be made")

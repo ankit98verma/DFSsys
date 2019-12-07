@@ -1,32 +1,8 @@
 import time
+import pickle as pk
 
 
 class DSPacket:
-    # PACKET_TYPES = {'O_packet':
-    #                     {'Type': 0,
-    #                      'Subtype':
-    #                          {'Online_packet': 0}
-    #                      },
-    #                 'Req_packet':
-    #                     {'Type': 1,
-    #                      'Subtype':
-    #                          {'File': 0,
-    #                           'Online_users': 1,
-    #                           'Public_files': 2,
-    #                           'Sub_private_files': 3,
-    #                           'Misce': 255}
-    #                      },
-    #                 'Res_packet':
-    #                     {'Type': 2,
-    #                      'Subtype':
-    #                          {'File': 0,
-    #                           'Online_users': 1,
-    #                           'Public_files': 2,
-    #                           'Sub_private_files': 3,
-    #                           'Misce': 255}
-    #                      }
-    #                 }
-
     packet_proc_funcs = {}
 
     def __init__(self, packet_counter=0, originator_packet_counter=0, originator_ip="127.0.0.1",
@@ -145,7 +121,54 @@ class Res_packet(DSPacket):
         return self.messages
 
     @staticmethod
-    def response_list_processor(list):
-        f = list[0]
+    def response_list_processor(packet_list, data):
+        if len(packet_list) == 0:
+            print("No response")
+            return
+        f = packet_list[0]
         if f.sub_type == Res_packet.SUB_TYPES_dict['Online_users']:
-            pass
+            for l in packet_list:
+                print("%s has following list of Online users:" % l.originator_IP)
+                onlines = pk.loads(l.messages['data'])
+                with data.lock:
+                    if len(onlines) > 0:
+                        keys = list(onlines[0].keys())
+                        for k in keys:
+                            print("%s\t\t" % k, end="")
+                        print()
+                        for j in onlines:
+                            for _, v in j.items():
+                                print("%s\t\t" % str(v), end="")
+                            print()
+        elif f.sub_type == Res_packet.SUB_TYPES_dict['Public_files']:
+            for l in packet_list:
+                print("%s has following list of public files:" % l.originator_IP)
+                f_list = pk.loads(l.messages['data'])
+                with data.lock:
+                    for j in f_list:
+                        print("\t%s" % j)
+        elif f.sub_type == Res_packet.SUB_TYPES_dict['Private_files']:
+            for l in packet_list:
+                print("%s has following list of private files:" % l.originator_IP)
+                f_list = pk.loads(l.messages['data'])
+                with data.lock:
+                    for j in f_list:
+                        print("\t%s" % j)
+        elif f.sub_type == Res_packet.SUB_TYPES_dict['file']:
+            pri_ips = []
+            for l in packet_list:
+                print("%s has file %s as %s:" % (l.originator_IP, l.messages['file']['name'], l.messages['file']['type']))
+                if l.messages['file']['type'] == 'public':
+                    with data.lock:
+                        data.file_req_ip = l.originator_IP
+                        data.file_req_name = l.messages['file']['name']
+                        data.file_req_event.set()
+                    return
+                if l.messages['file']['type'] == 'private':
+                    pri_ips.append(l.originator_IP)
+
+            # No public file, so request user with the file declared as private
+            with data.lock:
+                data.file_req_ip = pri_ips[0]
+                data.file_req_name = f.messages['file']['name']
+                data.file_req_event.set()

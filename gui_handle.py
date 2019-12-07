@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import *

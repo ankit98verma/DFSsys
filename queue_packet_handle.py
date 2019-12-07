@@ -1,5 +1,3 @@
-import pickle as pk
-
 from packet import *
 
 
@@ -34,7 +32,9 @@ class DFSsysQueuePacketHandle:
                            sub_type=p.sub_type, forwarding_counter=1)
         if p.sub_type == Res_packet.SUB_TYPES_dict['file']:
             if p.get_file_name() in self.data.data_struct.public_files:
-                p_res.add_message('file', p.get_file_name())
+                p_res.add_message('file', {'name': p.get_file_name(), 'type': 'public'})
+            elif p.get_file_name() in self.data.data_struct.private_files:
+                p_res.add_message('file', {'name': p.get_file_name(), 'type': 'private'})
             else:
                 return
         if p.sub_type == Res_packet.SUB_TYPES_dict['Online_users']:
@@ -72,4 +72,4 @@ class DFSsysQueuePacketHandle:
             with self.data.lock:
                 self.data.responses_dict[counter]['start_proc'] = 0
                 self.data.responses_dict[counter]['list'].append(p)
-                print('added to list!')
+                # print('added to list!')

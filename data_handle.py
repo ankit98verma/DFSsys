@@ -3,7 +3,6 @@ import os
 import socket
 import threading
 from queue import Queue
-
 from packet import *
 
 
@@ -31,6 +30,9 @@ class DFSsysDataHandle:
         # the shared data related to the threads
         self.lock = threading.RLock()
         self.close_event = threading.Event()
+        self.file_req_event = threading.Event()
+        self.file_req_name = ""
+        self.file_req_ip = ""
         self.threads = []
 
         # the data for command handling
@@ -59,6 +61,11 @@ class DFSsysDataHandle:
         self.tcp_listen_socket.settimeout(1)  # 1 sec timeout for now
         self.tcp_listen_socket.listen(10)  # 10 connections at a time for now
 
+        self.tcp_file_listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tcp_file_listen_socket.bind((self.basic_params['IP_ADDR'], self.basic_params['TCP_file_listen_port']))
+        self.tcp_file_listen_socket.settimeout(1)  # 1 sec timeout for now
+        self.tcp_file_listen_socket.listen(10)  # 10 connections at a time for now
+
     def setup_log(self):
         self.log_info = self.basic_params
         self.log_info['Tran_o_packet_nos'] = 0
@@ -73,7 +80,7 @@ class DFSsysDataHandle:
         self.log_info['Rece_res_packet_nos'] = 0
 
     def read_config(self):
-        self.req = {'IP_ADDR': str, 'UDP_Transmit_port': int, 'UDP_Receive_port': int, 'Listen_Conn_No': int,
+        self.req = {'IP_ADDR': str, 'UDP_Receive_port': int, 'TCP_file_listen_port': int, 'Listen_Conn_No': int,
                     'O_Transmit_Rate': int, 'Alias': str, 'TCP_Listen_port': int, 'TCP_receive_queue_len': int,
                     'Duplicate_packet_list_len': int, 'Removal_margin': int, 'Onlines_check_rate': int,
                     'Requests_check_rate': int, 'GUI_update_rate': int, 'Response_over_type': int,

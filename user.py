@@ -6,12 +6,9 @@ from threads_handle import *
 
 class User:
 
-    def welcome_msg(self):
-        print("Welcome!\nStarting the UDP transmit and receive thread")
-
     def __init__(self, path="user.config"):
         # initialize the protocol and operation related variable
-        self.welcome_msg()
+        print("Welcome!")
 
         self.data = DFSsysDataHandle(path=path)
         self.queue_packet_handle = DFSsysQueuePacketHandle(self.data)
