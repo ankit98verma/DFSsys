@@ -86,7 +86,7 @@ class DFSsysDataHandle:
                     'Requests_check_rate': int, 'GUI_update_rate': int, 'Response_over_type': int,
                     'Subnet_mask': str, 'UDP_transmit_queue_len': int, 'UDP_receive_queue_len': int,
                     'Pub_file_directory': str, 'Pri_file_directory': str, 'Rec_directory': str, 'Request_TOL': int,
-                    'TCP_transmit_queue_len': int, 'Burst_nos': int}
+                    'TCP_transmit_queue_len': int, 'Burst_nos': int, 'File_transfer_TO': int}
         data = dict()
         f = open(os.path.join(self.root, self.path), 'r')
         for line in f.readlines():

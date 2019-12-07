@@ -284,7 +284,7 @@ class DFSsysThreadHandle:
         print("TCP File listen stopped\n", end="")
 
     def tcp_file_transmit_thread(self, conn, addr):
-        conn.settimeout(5)  # 5 second timeout
+        conn.settimeout(self.data.basic_params['File_transfer_TO'])  # 5 second timeout
         try:
             # first get file name
             fn = conn.recv(1024)  # buffer size
@@ -343,7 +343,7 @@ class DFSsysThreadHandle:
     def tcp_file_receive_thread(self):
         # Only for receiving the file
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5)  # 5 sec timeout
+        sock.settimeout(self.data.basic_params['File_transfer_TO'])  # 5 sec timeout
         try:
             sock.connect((self.data.file_req_ip, self.data.basic_params['TCP_file_listen_port']))
             sock.send(self.data.file_req_name.encode())
