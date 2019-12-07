@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="70d352f0-1894-4de4-8e91-122997316e21" name="Default Changelist" comment="better response handling is implemented. Response list processing to be&#10;written. First update the packet structure">
+    <list default="true" id="70d352f0-1894-4de4-8e91-122997316e21" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DDS/data_handle.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/data_handle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DDS/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/user.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rec_files/1.png" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -115,8 +117,8 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="E:\Documents\Academics\Masters\First_term\Control_optimization_of_networks\Project\DFSSYS\DDS\user.py" />
-      <option name="PARAMETERS" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/DDS/user.py" />
+      <option name="PARAMETERS" value="E:\Documents\Academics\Masters\First_term\Control_optimization_of_networks\Project\DFSSYS" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -124,6 +126,11 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Python.dfssys_gui" />
+      <item itemvalue="Python.test_file" />
+      <item itemvalue="Python.user" />
+    </list>
   </component>
   <component name="ServiceViewManager">
     <option name="showServicesTree" value="false" />

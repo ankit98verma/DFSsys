@@ -8,9 +8,9 @@ from DDS.packet import *
 
 class DFSsysDataHandle:
 
-    def __init__(self, path):
+    def __init__(self, path, root=""):
         self.path = path
-
+        self.root = root
         self.req = {}
 
         # basic data
@@ -88,7 +88,7 @@ class DFSsysDataHandle:
                     'Pub_file_directory': str, 'Pri_file_directory': str, 'Rec_directory': str, 'Request_TOL': int,
                     'TCP_transmit_queue_len': int}
         data = dict()
-        f = open(self.path, 'r')
+        f = open(os.path.join(self.root, self.path), 'r')
         for line in f.readlines():
             if line.strip(' ')[0] == "#":
                 line = line.strip('#')
@@ -102,6 +102,11 @@ class DFSsysDataHandle:
                 exit(0)
         net = ipaddress.IPv4Network(data['IP_ADDR'] + '/' + data['Subnet_mask'], False)
         data['Broadcast_addr'] = str(net.broadcast_address)
+
+        os.makedirs(os.path.join(self.root, data['Pub_file_directory']), exist_ok=True)
+        os.makedirs(os.path.join(self.root, data['Pri_file_directory']), exist_ok=True)
+        os.makedirs(os.path.join(self.root, data['Rec_directory']), exist_ok=True)
+
         return data
 
     def add_req_config_param(self, key, value_type):
