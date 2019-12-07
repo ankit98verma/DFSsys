@@ -11,6 +11,8 @@ setup(
     packages=find_packages(),
     install_requires=['PyQt5'],
     entry_points={
-        'console_scripts': ['dfssys=user:main']
+        'console_scripts': [
+            'dfssys=DFSSYS.user:main'
+        ]
     }
 )
