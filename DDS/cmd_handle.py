@@ -37,16 +37,19 @@ class DFSsysCmdHandle:
                                                                     'Prints out the commands being executed from '
                                                                     'the script', param_type=None)
 
-        self.par.add_command('show_gui', "Show different GUI windows.", function=self.cmd_show_gui)
-        self.par.get_command('show_gui').add_optional_arguments('-m', '--main_gui',
-                                                                'Shows the main GUI with basic log information',
-                                                                param_type=None)
-        self.par.get_command('show_gui').add_optional_arguments('-o', '--onlines_gui',
-                                                                'Shows the list of online users',
-                                                                param_type=None)
-        self.par.get_command('show_gui').add_optional_arguments('-a', '--all',
-                                                                'Shows the list of online users',
-                                                                param_type=None)
+        self.par.add_command('show_data', "Show different GUI windows.", function=self.cmd_show_data)
+        self.par.get_command('show_data').add_optional_arguments('-o', '--onlines_gui',
+                                                                 'Shows the list of online users',
+                                                                 param_type=None)
+        self.par.get_command('show_data').add_optional_arguments('-l', '--log_data',
+                                                                 'Shows the log data',
+                                                                 param_type=None)
+        self.par.get_command('show_data').add_optional_arguments('-pubf', '--public_files',
+                                                                 'Shows the list of public files',
+                                                                 param_type=None)
+        self.par.get_command('show_data').add_optional_arguments('-prif', '--private_files',
+                                                                 'Shows the list of private files',
+                                                                 param_type=None)
 
         self.par.add_command('req', "Sends request packet", function=self.cmd_req)
         self.par.get_command('req').add_optional_arguments('-f', '--file', 'Request a file', param_type=None)
@@ -74,7 +77,7 @@ class DFSsysCmdHandle:
 
         if self.data.log_file is not None:
             self.data.log_file.close()
-        input(self.input_string+"Press enter (return) key to exit")
+        input(self.input_string + "Press enter (return) key to exit")
         sys.exit(0)
 
     def cmd_help(self, res, out_func=print):
@@ -97,10 +100,35 @@ class DFSsysCmdHandle:
             self.data.log_func = print
             self.data.log_file = None
 
-    def cmd_show_gui(self, res):
+    def cmd_show_data(self, res):
         key_list = list(res.keys())
-        with self.data.lock:
-            self.data.UI.show_guis(key_list)
+        if '-o' in key_list:
+            with self.data.lock:
+                if len(self.data.data_struct.onlines) > 0:
+                    keys = list(self.data.data_struct.onlines[0].keys())
+                    for k in keys:
+                        print("%s\t\t" % k, end="")
+                    print()
+                    for j in self.data.data_struct.onlines:
+                        for _, v in j.items():
+                            print("%s\t\t" % str(v), end="")
+                        print()
+        if '-pubf' in key_list:
+            with self.data.lock:
+                print("Following are the public files")
+                for j in self.data.data_struct.public_files:
+                    print("\t%s" % j)
+        if '-prif' in key_list:
+            with self.data.lock:
+                print("Following are the private files")
+                for j in self.data.data_struct.private_files:
+                    print("\t%s" % j)
+        if '-l' in key_list:
+            with self.data.lock:
+                print("Following are the log files")
+                print("Key\t\tValue")
+                for k, v in self.data.log_info.items():
+                    print("%s\t\t%s" % (str(k), str(v)))
 
     def cmd_req(self, res):
         key_list = list(res.keys())

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='DDS',
-    version='1.0.3',
+    version='1.0.4',
     packages=['DDS'],
     url='https://github.com/ankit98verma/DFSsys',
     license='Caltech',
