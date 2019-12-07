@@ -47,11 +47,11 @@ class DFSsysQueuePacketHandle:
         if p.get_transmit_type() == 0:
             p_res.forwarding_counter = 1
             with self.data.lock:
-                for i in range(0, self.data.basic_params['Burst_nos']):
-                    self.data.tcp_transmit_queue.put(p_res)
+                self.data.tcp_transmit_queue.put(p_res)
         else:
             with self.data.lock:
-                self.data.udp_transmit_queue.put(p_res)
+                for i in range(0, self.data.basic_params['Burst_nos']):
+                    self.data.udp_transmit_queue.put(p_res)
         with self.data.lock:
             self.data.log_info['Tran_res_packet_nos'] += 1
             self.data.basic_params['packet_counter'] += 1

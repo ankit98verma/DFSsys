@@ -244,7 +244,6 @@ class DFSsysThreadHandle:
         p = pk.loads(data)
         with self.data.lock:
             self.data.tcp_receive_queue.put(p)
-        print("Exiting tcp receive thread\n", end="")
 
     def tcp_transmit_thread(self):
         while True:
