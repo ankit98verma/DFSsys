@@ -8,5 +8,11 @@ setup(
     license='Caltech',
     author='Ankit',
     author_email='ankitvermajnp@gmail.com',
-    description='Distributed discovery and data sharing system'
+    description='Distributed discovery and data sharing system',
+    install_requires=['PyQt5'],
+    entry_points={
+            'console_scripts': [
+                'dds=DDS.user:main'
+            ]
+        }
 )

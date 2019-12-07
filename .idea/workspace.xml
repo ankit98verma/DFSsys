@@ -2,28 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="70d352f0-1894-4de4-8e91-122997316e21" name="Default Changelist" comment="better response handling is implemented. Response list processing to be&#10;written. First update the packet structure">
-      <change afterPath="$PROJECT_DIR$/DDS/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/Analysis-00.toc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/EXE-00.toc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/PKG-00.pkg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/PKG-00.toc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/PYZ-00.pyz" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/PYZ-00.toc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/base_library.zip" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/user.exe.manifest" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/warn-user.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/user/xref-user.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd_handle.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/cmd_handle.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data_handle.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/data_handle.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gui_handle.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/gui_handle.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/packet.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/packet.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queue_packet_handle.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/queue_packet_handle.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scr1.txt" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/scr1.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/strargparser.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/strargparser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_file.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/test_file.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/threads_handle.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/threads_handle.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/DDS/user.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
