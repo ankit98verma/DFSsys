@@ -114,6 +114,8 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['file'],
                            forwarding_counter=1)
             with self.data.lock:
+                for i in range(0, self.data.basic_params['Burst_nos']):
+                    self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
                 self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
@@ -126,6 +128,8 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['Online_users'],
                            forwarding_counter=1)
             with self.data.lock:
+                for i in range(0, self.data.basic_params['Burst_nos']):
+                    self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
                 self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
@@ -138,7 +142,8 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['Public_files'],
                            forwarding_counter=1)
             with self.data.lock:
-                self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
+                for i in range(0, self.data.basic_params['Burst_nos']):
+                    self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
                 self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))
 
@@ -150,6 +155,8 @@ class DFSsysCmdHandle:
                            sub_type=Res_packet.SUB_TYPES_dict['Private_files'],
                            forwarding_counter=1)
             with self.data.lock:
+                for i in range(0, self.data.basic_params['Burst_nos']):
+                    self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.add_to_transmit_queue(self.data.udp_transmit_queue, p)
                 self.data.responses_dict[p.packet_counter] = {'start_proc': 0, 'list': []}
                 self.data.requests_dict[p.packet_counter] = int(round(time.time() * 1000))

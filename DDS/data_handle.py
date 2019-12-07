@@ -86,7 +86,7 @@ class DFSsysDataHandle:
                     'Requests_check_rate': int, 'GUI_update_rate': int, 'Response_over_type': int,
                     'Subnet_mask': str, 'UDP_transmit_queue_len': int, 'UDP_receive_queue_len': int,
                     'Pub_file_directory': str, 'Pri_file_directory': str, 'Rec_directory': str, 'Request_TOL': int,
-                    'TCP_transmit_queue_len': int}
+                    'TCP_transmit_queue_len': int, 'Burst_nos': int}
         data = dict()
         f = open(os.path.join(self.root, self.path), 'r')
         for line in f.readlines():
@@ -129,8 +129,8 @@ class DataStructures:
         self.duplicate_packets = []
 
     def should_process_packet(self, p):
-        # if p.originator_IP == self.basic_params['IP_ADDR']:
-        #     return False
+        if p.originator_IP == self.basic_params['IP_ADDR']:
+            return False
         if p.type == O_packet.PACKET_TYPE:
             return True
         if self.is_duplicate(p):

@@ -141,8 +141,6 @@ class DFSsysThreadHandle:
                 is_proc = self.data.data_struct.should_process_packet(p)
             if is_proc:
                 DSPacket.packet_proc_funcs[p.type](p)
-            else:
-                print(":(")
         print("Exiting received packet processing thread\n", end="")
 
     def responses_manager(self):
