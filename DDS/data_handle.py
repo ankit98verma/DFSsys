@@ -3,6 +3,7 @@ import os
 import socket
 import threading
 from queue import Queue
+
 from DDS.packet import *
 
 
@@ -129,8 +130,8 @@ class DataStructures:
         self.duplicate_packets = []
 
     def should_process_packet(self, p):
-        if p.originator_IP == self.basic_params['IP_ADDR']:
-            return False
+        # if p.originator_IP == self.basic_params['IP_ADDR']:
+        #     return False
         if p.type == O_packet.PACKET_TYPE:
             return True
         if self.is_duplicate(p):

@@ -1,6 +1,7 @@
 import inspect
 import sys
 from datetime import datetime
+
 from DDS.packet import *
 from DDS.strargparser import *
 
@@ -77,7 +78,6 @@ class DFSsysCmdHandle:
 
         if self.data.log_file is not None:
             self.data.log_file.close()
-        input(self.input_string + "Press enter (return) key to exit")
         sys.exit(0)
 
     def cmd_help(self, res, out_func=print):

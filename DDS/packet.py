@@ -157,18 +157,19 @@ class Res_packet(DSPacket):
         elif f.sub_type == Res_packet.SUB_TYPES_dict['file']:
             pri_ips = []
             for l in packet_list:
-                print("%s has file %s as %s:" % (l.originator_IP, l.messages['file']['name'], l.messages['file']['type']))
-                if l.messages['file']['type'] == 'public':
+                print(
+                    "%s has file %s as %s:" % (l.originator_IP, l.messages['data']['name'], l.messages['data']['type']))
+                if l.messages['data']['type'] == 'public':
                     with data.lock:
                         data.file_req_ip = l.originator_IP
-                        data.file_req_name = l.messages['file']['name']
+                        data.file_req_name = l.messages['data']['name']
                         data.file_req_event.set()
                     return
-                if l.messages['file']['type'] == 'private':
+                if l.messages['data']['type'] == 'private':
                     pri_ips.append(l.originator_IP)
 
             # No public file, so request user with the file declared as private
             with data.lock:
                 data.file_req_ip = pri_ips[0]
-                data.file_req_name = f.messages['file']['name']
+                data.file_req_name = f.messages['data']['name']
                 data.file_req_event.set()
