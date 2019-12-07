@@ -1,5 +1,5 @@
-import time
 import pickle as pk
+import time
 
 
 class DSPacket:
@@ -65,8 +65,8 @@ class O_packet(DSPacket):
 class Req_packet(DSPacket):
     PACKET_TYPE = 1
     SUB_TYPES = [0, 1, 2, 3, 255]
-    SUB_TYPES_dict = {'file': 0, 'Online_users': 1, 'Public_files': 2, 'Sub_private_files': 3, 'Misce': 255}
-    SUB_TYPES_rev = {0: 'file', 1: 'Online_users', 2: 'Public_files', 3: 'Sub_private_files', 255: 'Misce'}
+    SUB_TYPES_dict = {'file': 0, 'Online_users': 1, 'Public_files': 2, 'Private_files': 3, 'Misce': 255}
+    SUB_TYPES_rev = {0: 'file', 1: 'Online_users', 2: 'Public_files', 3: 'Private_files', 255: 'Misce'}
 
     def __init__(self, res_type, file_name="", packet_counter=0, originator_packet_counter=0, originator_ip="127.0.0.1",
                  sub_type=0, forwarding_counter=0):
